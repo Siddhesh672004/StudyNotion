@@ -24,17 +24,18 @@ async function sendVerificationEmail(email, otp) {
         const mailResponse = await mailSender(email, "Verification mail from StudyNotion", otp);
         console.log("Email sent successfully", mailResponse);
     }
-    catch(error) {
-        console.log("Error occurred whiole sending mail: "error);
+    catch(error) {   
+        console.log("Error occurred whiole sending mail: ",error);
         throw error;
     }
 }
 
 //Pre save middleware, document db me save hone se just pehele ye code run hona chahiye
-OTPSchema.pre("save", async function(next)) {
+OTPSchema.pre("save", async function(next) {
     await sendVerificationEmail(this.email, this.otp);
+    //inssted of "this" we can use doc.email or doc.otp
     next();
-}
+})
 
 
 module.exports = mongoose.model("OTP", OTPSchema);
