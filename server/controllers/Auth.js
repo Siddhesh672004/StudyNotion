@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const OTP = require("../models/Otp");
 const otpGenerator = require("otp-generator");
+const bcrypt = require("bcrypt");
 
 
 //Send otp Controller
@@ -64,4 +65,116 @@ exports.sendOTP = async(req, res) => {
 };
 
 //SignUp controller
+
+exports.signUp = async(req, res) => {
+    try {
+        //data fetch from request ki body
+        const { firstName, 
+                lastName,
+                email, 
+                password, 
+                confirmPassword,
+                accountType, 
+                contactNumber, 
+                otp
+        } = req.body;
+
+        //validate the fields
+        if(!firstName || !lastName || !email || !password || !confirmPassword || !otp) {
+            return res.status(403).json({
+                success: false,
+                message: 'All fields are required',
+            })
+        }
+
+        //2no password ko match krlo
+        if(password !== confirmPassword){
+            return res.status(400).json({
+                success: false,
+                message: 'Password and Confirm Password values does not match, please try again',
+            });
+        }
+
+        //Check if the user already exists or not
+        const existingUser = await User.findOne({email});
+        if(existingUser){
+            return res.status(400).json({
+                success: false, 
+                message: 'USer is already registered',
+            });
+        }
+
+        //find the most recent otp stored for the user
+        const recentOtp = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+        console.log(recentOtp);
+
+        //validate otp
+        if(recentOtp.length == 0) {
+            //OTP not found
+            return res.status(400).json({
+                success: false,
+                message: 'OTP Found',
+            })
+        } else if(otp !== recentOtp.otp) {
+            //Invalid otp
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid OTP',
+            });
+        }
+
+        //Hash Password
+        const hashedpassword = await bcrypt.hash(password, 10);
+
+        //Create an entry in database
+        const profileDetails = await Profiler.create({
+            gender: null,
+            dateOfBirth: null,
+            about: null,
+            contactNumber: null,
+        });
+
+        const user = await User.create({
+            firstName,
+            lastName,
+            email,
+            contactNumber,
+            password: hashedpassword,
+            accountType,
+            additionalDetails: profileDetails._id,
+            image: `https://api.dicebear.com/5.x/initials/svg?seed=${firstName} ${lastName}`,
+        })
+
+        //return response
+        return res.status(200).json({
+            success: true,
+            message: 'User is registered Successfully',
+            user,
+        });
+    }
+    catch(error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: 'User cannot be registered, please try again',
+        })
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
