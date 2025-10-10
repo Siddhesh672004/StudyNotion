@@ -184,7 +184,7 @@ exports.login = async (req, res) => {
                 message: 'User is not registered, please signup first',
             });
         }
-        
+
         //generate JWT token, after password is matched
         if(await bcrypt.compare(password, user.password)) {
             const payload = {
@@ -226,7 +226,44 @@ exports.login = async (req, res) => {
     }
 };
 
+// //changePassword controller
+// exports.changePassword = async (req, res) => {
+//     try {
+//         //get data from req ki body
+//         const { oldPassword, newPassword, confirmNewPassword } = req.body;
 
+//         //validation
+//         if(!oldPassword || !newPassword || !confirmNewPassword) {
+//             return res.status(403).json({
+//                 success: false,
+//                 message: 'All fields are required, please try again',
+//             });
+//         }
+
+//         if(newPassword !== confirmNewPassword) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: 'New Password and Confirm New Password does not match, Please try again',
+//             });
+//         }
+
+//         //update pwd in Db
+//         if(newPassword == confirmNewPassword) {
+
+//         }
+//         //send email --> password updated
+
+//         //return response
+
+//     }
+//     catch(error) {
+//         console.log(error);
+//         return res.status(500).json({
+//             success: false,
+//             message: '',
+//         })
+//     }
+// }
 
 
 
