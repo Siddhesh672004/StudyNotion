@@ -2,6 +2,8 @@ const User = require("../models/User");
 const OTP = require("../models/Otp");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 
 //Send otp Controller
@@ -161,6 +163,68 @@ exports.signUp = async(req, res) => {
     }
 };
 
+exports.login = async (req, res) => {
+    try {
+        //get data from req body
+        const { eamil, password } = req.body;
+
+        //validation of data
+        if(!email || !password) {
+            return res.status(403).json({
+                success: false,
+                message: 'All fields are required, please try again',
+            });
+        }
+
+        //check if user exist or not
+        const user = await User.findOne({email}).populate("additionalDetails");
+        if(!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'User is not registered, please signup first',
+            });
+        }
+        
+        //generate JWT token, after password is matched
+        if(await bcrypt.compare(password, user.password)) {
+            const payload = {
+                email: user.email,
+                id: user._id,
+                role: user.role,
+            }
+            const token = jwt.sign(payload, process.env.JWT_SECRET, {
+                expiresIn: "2h",
+            });
+            user.token = token;
+            user.password = undefined;
+
+            //create cookie and send response
+            const options = {
+                expires: new Date(Date.now() + 33*24*60*60*1000),
+                httpOnly: true,
+            }
+            res.cookie("token", token, options).status(200).json({
+                success: false,
+                token,
+                user,
+                message: 'Logged in Successfully',
+            })
+        }
+        else {
+            return res.status(401).json({
+                success: false,
+                message: 'Password is incorrect',
+            }); 
+        }
+    }
+    catch(error) {
+        console.log(error);
+        return res.status(500).json({
+                success: false,
+                message: 'Login failure, please try again',
+        }); 
+    }
+};
 
 
 
