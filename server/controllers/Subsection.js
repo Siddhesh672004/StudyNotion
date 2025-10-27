@@ -26,7 +26,7 @@ exports.createSubSection = async (req, res) => {
     );
 
     //create a sub-section
-    const SubSectionDetails = await SubSection.create({
+    const subSectionDetails = await SubSection.create({
       title: title,
       timeDuration: timeDuration,
       description: description,
