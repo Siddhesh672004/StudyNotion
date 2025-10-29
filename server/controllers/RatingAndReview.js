@@ -119,7 +119,7 @@ exports.getAverageRating = async (req, res) => {
 }
 
 //getAllRating
-exports.getAllRating = async (req, res) => {
+exports.getAllRating = async (req, res) => { 
     try {
         // saare reviews nikaal lo, highest rating pehle (desc)
         const allReviews = await RatingAndReview.find({})
