@@ -41,7 +41,7 @@ router.post("/createCourse", auth, isInstructor, createCourse);
 // Get all Registered Courses
 router.get("/showAllCourses", showAllCourses);
 //Get details for a specific course
-router.get("/getCourseDetails", getCourseDetails);
+router.post("/getCourseDetails", getCourseDetails);
 
 //add a section to a course
 router.post("/addSection", auth, isInstructor, createSection);

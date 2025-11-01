@@ -10,7 +10,7 @@ exports.uploadImageToCloudinary = async (file, folder, height, quality) =>  {
     if(quality) {
         options.quality = quality;
     }
-    options.resource_typr = "auto";
+    options.resource_type = "auto";
 
     return await cloudinary.uploader.upload(file.tempFilePath, options);
 }

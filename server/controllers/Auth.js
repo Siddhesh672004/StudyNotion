@@ -3,6 +3,7 @@ const OTP = require("../models/Otp");
 const otpGenerator = require("otp-generator");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const Profile = require("../models/Profile");
 require("dotenv").config();
 
 //Send otp Controller
@@ -109,7 +110,7 @@ exports.signUp = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "USer is already registered",
+        message: "User is already registered",
       });
     }
 
@@ -120,25 +121,39 @@ exports.signUp = async (req, res) => {
     console.log(recentOtp);
 
     //validate otp
-    if (recentOtp.length == 0) {
-      //OTP not found
-      return res.status(400).json({
-        success: false,
-        message: "OTP Found",
-      });
-    } else if (otp !== recentOtp.otp) {
-      //Invalid otp
-      return res.status(400).json({
-        success: false,
-        message: "Invalid OTP",
-      });
-    }
+    // if (recentOtp.length == 0) {
+    //   //OTP not found
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "OTP Not Found",
+    //   });
+    // } else if (otp !== recentOtp[0].otp) {
+    //   //Invalid otp
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: "Invalid OTP",
+    //   });
+    // }
+    //validates the otp//validate otp
+      if (recentOtp.length === 0) {
+          return res.status(400).json({
+              success: false,
+              message: "OTP Not Found"
+          });
+      }
+
+      if (otp !== recentOtp[0].otp.toString()) {
+          return res.status(400).json({
+              success: false,
+              message: "Invalid OTP"
+          });
+      }
 
     //Hash Password
     const hashedpassword = await bcrypt.hash(password, 10);
 
     //Create an entry in database
-    const profileDetails = await Profiler.create({
+    const profileDetails = await Profile.create({
       gender: null,
       dateOfBirth: null,
       about: null,
@@ -162,8 +177,9 @@ exports.signUp = async (req, res) => {
       message: "User is registered Successfully",
       user,
     });
-  } catch (error) {
-    console.log(error);
+  } 
+  catch (error) {
+    console.error("Signup Error =>", error.message);
     return res.status(500).json({
       success: false,
       message: "User cannot be registered, please try again",
@@ -174,7 +190,7 @@ exports.signUp = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     //get data from req body
-    const { eamil, password } = req.body;
+    const { email, password } = req.body;
 
     //validation of data
     if (!email || !password) {
@@ -212,7 +228,7 @@ exports.login = async (req, res) => {
         httpOnly: true,
       };
       res.cookie("token", token, options).status(200).json({
-        success: false,
+        success: true,
         token,
         user,
         message: "Logged in Successfully",
@@ -223,7 +239,8 @@ exports.login = async (req, res) => {
         message: "Password is incorrect",
       });
     }
-  } catch (error) {
+  } 
+  catch (error) {
     console.log(error);
     return res.status(500).json({
       success: false,
@@ -232,7 +249,7 @@ exports.login = async (req, res) => {
   }
 };
 
-//chanepassword
+//changePassword
 
 exports.changePassword = async (req, res) => {
   try {

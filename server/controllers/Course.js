@@ -160,7 +160,7 @@ exports.getCourseDetails = async (req, res) => {
           }
         )
         .populate("category")                // course category attach karo
-        .populate("ratingAndreviews")        // ratings/reviews attach karo
+        .populate("ratingAndReviews")        // ratings/reviews attach karo
         .populate({
           path: "courseContent",             // courseContent sections lao
           populate: {

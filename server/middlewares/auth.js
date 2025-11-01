@@ -27,7 +27,7 @@ exports.auth = async (req, res, next) => {
         }   
         catch(error) {
             console.log(error);
-            return res.status.status(401).json({
+            return res.status(401).json({
                 success: false,
                 message: 'Token is invalid',
             });
@@ -35,7 +35,7 @@ exports.auth = async (req, res, next) => {
         next();
     }
     catch(error) {
-        return res.status.status(401).json({
+        return res.status(401).json({
             success: false,
             message: 'Something went wrong while validating the token',
         });
@@ -46,14 +46,14 @@ exports.auth = async (req, res, next) => {
 exports.isStudent = async (req, res, next) => {
     try {
         if(req.user.accountType !== "Student") {
-            return res.status.status(401).json({
+            return res.status(401).json({
                 success: false,
                 message: 'This is a protected route for Students only',
             })
         }
     }
     catch(error) {
-        return res.status.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'USer role cannot be verified, please try again.',
         })
@@ -65,14 +65,15 @@ exports.isStudent = async (req, res, next) => {
 exports.isInstructor = async (req, res, next) => {
     try {
         if(req.user.accountType !== "Instructor") {
-            return res.status.status(401).json({
+            return (401).json({
                 success: false,
                 message: 'This is a protected route for Instructor only',
             })
         }
+        next();
     }
     catch(error) {
-        return res.status.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'USer role cannot be verified, please try again.',
         })
@@ -83,14 +84,15 @@ exports.isInstructor = async (req, res, next) => {
 exports.isAdmin = async (req, res, next) => {
     try {
         if(req.user.accountType !== "Admin") {
-            return res.status.status(401).json({
+            return res.status(401).json({
                 success: false,
                 message: 'This is a protected route for Admin only',
             })
         }
+        next();
     }
     catch(error) {
-        return res.status.status(500).json({
+        return res.status(500).json({
             success: false,
             message: 'USer role cannot be verified, please try again.',
         })

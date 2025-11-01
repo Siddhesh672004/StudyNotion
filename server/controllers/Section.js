@@ -1,7 +1,8 @@
-const Section = requiure("../models/Section");
+const Section = require("../models/Section");
+const SubSection = require("../models/SubSection");
 const Course = require("../models/Course");
 
-exports.createSection = async (requestAnimationFrame, res) => {
+exports.createSection = async (req, res) => {
     try {
         //data fetch
         const { sectionName, courseId } = req.body;
@@ -43,7 +44,7 @@ exports.createSection = async (requestAnimationFrame, res) => {
             updatedCourseDetails,
         })
     }
-    catch(err) {
+    catch(error) {
         return res.status(500).json({
             success: false,
             message: "Unable to create Section, please try again",
@@ -86,17 +87,51 @@ exports.updateSection = async (req, res) => {
 
 exports.deleteSection = async (req, res) => {
     try {
-        //get ID - assuming that we are sending ID in params
-        const { sectionId } = req.params;
+        const { sectionId, courseId } = req.body
+        await Course.findByIdAndUpdate(courseId, {
+            $pull: {
+            courseContent: sectionId,
+            },
+        })
+        const section = await Section.findById(sectionId)
+        console.log(sectionId, courseId)
+        if (!section) {
+            return res.status(404).json({
+            success: false,
+            message: "Section not found",
+            })
+        }
+        // Delete the associated subsections
+        await SubSection.deleteMany({ _id: { $in: section.subSection } })
+    
+        await Section.findByIdAndDelete(sectionId)
+    
+        // find the updated course and return it
+        const course = await Course.findById(courseId)
+            .populate({
+            path: "courseContent",
+            populate: {
+                path: "subSection",
+            },
+            })
+            .exec()
+    
+        res.status(200).json({
+            success: true,
+            message: "Section deleted",
+            data: course,
+        })
+        // //get ID - assuming that we are sending ID in params
+        // const { sectionId } = req.body;
 
-        //use findByIdAndDelete
-        await Section.findByIdAndDelete(sectionId);
+        // //use findByIdAndDelete
+        // await Section.findByIdAndDelete(sectionId);
 
-        //return response
-        return res.status(200).json({
-        success: true,
-        message: "Section Deleted Successfully",
-        }); 
+        // //return response
+        // return res.status(200).json({
+        // success: true,
+        // message: "Section Deleted Successfully",
+        // }); 
     }
     catch(error) {
         return res.status(500).json({
