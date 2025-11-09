@@ -35,7 +35,7 @@ const Footer = () => {
                 Company
               </h1>
               <div className="flex flex-col gap-2">
-                {["About", "Careers", "Affiliates"].map((ele, i) => {
+                {["About Section", "Careers", "Affiliates"].map((ele, i) => {
                   return (
                     <div
                       key={i}
