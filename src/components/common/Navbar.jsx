@@ -49,6 +49,7 @@ const Navbar = () => {
   const matchRoute = (route) => {
     return matchPath({ path: route }, location.pathname);
   }
+  console.log(token)
 
   return (
     <div
@@ -145,7 +146,7 @@ const Navbar = () => {
               </button>
             </Link>
           )}
-          {token !== null && <ProfileDropdown />}
+          {token && <ProfileDropdown/>}
         </div> 
         <button className="mr-4 md:hidden">
           <AiOutlineMenu fontSize={24} fill="#AFB2BF" />
