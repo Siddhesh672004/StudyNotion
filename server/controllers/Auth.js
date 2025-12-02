@@ -68,6 +68,7 @@ exports.sendOTP = async (req, res) => {
 //SignUp controller
 
 exports.signUp = async (req, res) => {
+  console.log("Received Signup Body like this:", req.body);
   try {
     //data fetch from request ki body
     const {

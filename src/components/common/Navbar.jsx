@@ -30,14 +30,13 @@ const Navbar = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-      (async () => {
+    ; (async () => {
       setLoading(true)
       try {
         const res = await apiConnector("GET", categories.CATEGORIES_API)
         setSubLinks(res.data.data)
-      } 
-      catch (error) {
-        console.log("Could not fetch the category list.", error)
+      } catch (error) {
+        console.log("Could not fetch Categories.", error)
       }
       setLoading(false)
     })()
@@ -49,7 +48,6 @@ const Navbar = () => {
   const matchRoute = (route) => {
     return matchPath({ path: route }, location.pathname);
   }
-  console.log(token)
 
   return (
     <div
@@ -83,6 +81,9 @@ const Navbar = () => {
                         ) : subLinks ? (
                           <>
                             {subLinks
+                              ?.filter(
+                                (subLink) => subLink?.courses?.length > 0
+                              )
                               ?.map((subLink, i) => (
                                 <Link
                                   to={`/catalog/${subLink.name
@@ -146,8 +147,8 @@ const Navbar = () => {
               </button>
             </Link>
           )}
-          {token && <ProfileDropdown/>}
-        </div> 
+          {token !== null && <ProfileDropdown />}
+        </div>
         <button className="mr-4 md:hidden">
           <AiOutlineMenu fontSize={24} fill="#AFB2BF" />
         </button>
