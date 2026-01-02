@@ -4,6 +4,7 @@ const User = require("../models/User");
 const mailSender = require("../utils/mailSender");
 const { courseEnrollmentEmail } = require("../mail/templates/courseEnrollmentEmail");
 const { default: mongoose } = require("mongoose");
+const crypto = require("crypto");
 
 //capture the payment and initiate the Razorpay order
 exports.capturePayment = async (req, res) => {

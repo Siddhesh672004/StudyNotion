@@ -88,15 +88,7 @@ function App() {
           }
         />  
 
-    <Route
-          path="about"
-          element={
-            <OpenRoute>
-              <About />
-            </OpenRoute>
-          }
-        />
-    <Route path="/contact" element={<Contact />} />
+
 
        {/* Private Route - for Only Logged in User */}
         <Route 

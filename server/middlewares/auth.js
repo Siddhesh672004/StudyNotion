@@ -5,13 +5,22 @@ const User = require("../models/User");
 //auth handler
 exports.auth = async (req, res, next) => {
     try{
-        //extract token from ....
-        const token = req.cookies.token
-                        || req.body.token
-                        || req.header("Authorization").replace("Bearer", "");
+        //extract token from .... (use safe property access)
+        let token = req.cookies?.token || req.body?.token;
+        
+        // Extract token from Authorization header
+        if (!token && req.header("Authorization")) {
+            const authHeader = req.header("Authorization");
+            if (authHeader.startsWith("Bearer ")) {
+                token = authHeader.replace("Bearer ", "");
+            } else if (authHeader.startsWith("Bearer")) {
+                token = authHeader.replace("Bearer", "");
+            }
+        }
         
         //if token is missing, then return response
         if(!token) {
+            console.log("Token is missing in request");
             return res.status(401).json({
                 success: false,
                 message: 'Token is missing',
@@ -21,12 +30,12 @@ exports.auth = async (req, res, next) => {
         //verify the token
         try {
             const decode = jwt.verify(token, process.env.JWT_SECRET);
-            console.log(decode);
+            console.log("Token verified successfully for user:", decode.email);
             //IMP
             req.user = decode;
         }   
         catch(error) {
-            console.log(error);
+            console.log("Token verification failed:", error.message);
             return res.status(401).json({
                 success: false,
                 message: 'Token is invalid',
@@ -35,6 +44,8 @@ exports.auth = async (req, res, next) => {
         next();
     }
     catch(error) {
+        console.log("Auth middleware error:", error);
+        console.log("Error stack:", error.stack);
         return res.status(401).json({
             success: false,
             message: 'Something went wrong while validating the token',
@@ -51,6 +62,7 @@ exports.isStudent = async (req, res, next) => {
                 message: 'This is a protected route for Students only',
             })
         }
+        next();
     }
     catch(error) {
         return res.status(500).json({
@@ -65,7 +77,7 @@ exports.isStudent = async (req, res, next) => {
 exports.isInstructor = async (req, res, next) => {
     try {
         if(req.user.accountType !== "Instructor") {
-            return (401).json({
+            return res.status(401).json({
                 success: false,
                 message: 'This is a protected route for Instructor only',
             })

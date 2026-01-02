@@ -80,7 +80,7 @@ exports.updateSection = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Unable to Update Section, please try again",
-            error: error.message,
+            error: err.message,
         });
     }
 }
