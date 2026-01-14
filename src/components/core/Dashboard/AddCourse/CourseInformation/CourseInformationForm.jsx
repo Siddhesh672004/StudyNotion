@@ -124,6 +124,7 @@ export default function CourseInformationForm() {
         }
         // console.log("Edit Form data: ", formData)
         setLoading(true)
+        console.log("theTokenHere", token)
         const result = await editCourseDetails(formData, token)
         
 
@@ -160,6 +161,7 @@ export default function CourseInformationForm() {
       console.log("form data is not found")
     }
 
+    console.log("theTokenHere", token)
     const result = await addCourseDetails(formData, token)
   
     if (result) {

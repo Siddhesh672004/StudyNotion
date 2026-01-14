@@ -22,6 +22,10 @@ export default function Upload({
   )
   const inputRef = useRef(null)
 
+  const openFilePicker = () => {
+    inputRef.current.click()
+  }
+
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0]
     if (file) {
@@ -35,6 +39,8 @@ export default function Upload({
       ? { "image/*": [".jpeg", ".jpg", ".png"] }
       : { "video/*": [".mp4"] },
     onDrop,
+    noClick: false,
+    noKeyboard: false,
   })
 
   const previewFile = (file) => {
@@ -62,41 +68,53 @@ export default function Upload({
         {label} {!viewData && <sup className="text-pink-200">*</sup>}
       </label>
       <div
+        {...getRootProps({
+          onClick: (e) => {
+            // Only open file picker if not clicking on the Remove button
+            if (e.target.tagName !== 'BUTTON') {
+              openFilePicker()
+            }
+          }
+        })}
         className={`${
           isDragActive ? "bg-richblack-600" : "bg-richblack-700"
-        } flex min-h-[250px] cursor-pointer items-center justify-center rounded-md border-2 border-dotted border-richblack-500`}
+        } flex min-h-[250px] cursor-pointer items-center justify-center rounded-md border-2 border-dotted border-richblack-500 transition-colors duration-200 relative`}
       >
+        <input {...getInputProps()} ref={inputRef} />
         {previewSource ? (
-          <div className="flex w-full flex-col p-6">
-            {!video ? (
-              <img
-                src={previewSource}
-                alt="Preview"
-                className="h-full w-full rounded-md object-cover"
-              />
-            ) : (
-              <Player aspectRatio="16:9" playsInline src={previewSource} />
-            )}
+          <div className="flex w-full flex-col items-center p-6">
+            <div className="pointer-events-none w-full">
+              {!video ? (
+                <img
+                  src={previewSource}
+                  alt="Preview"
+                  className="h-full w-full rounded-md object-cover"
+                />
+              ) : (
+                <Player aspectRatio="16:9" playsInline src={previewSource} />
+              )}
+            </div>
+            <p className="mt-3 text-sm text-richblack-200 pointer-events-none">
+              Click anywhere to change {!video ? "image" : "video"}
+            </p>
             {!viewData && (
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
                   setPreviewSource("")
                   setSelectedFile(null)
                   setValue(name, null)
                 }}
-                className="mt-3 text-richblack-400 underline"
+                className="mt-2 text-pink-200 underline hover:text-pink-100 relative z-10"
               >
-                Cancel
+                Remove
               </button>
             )}
           </div>
         ) : (
-          <div
-            className="flex w-full flex-col items-center p-6"
-            {...getRootProps()}
-          >
-            <input {...getInputProps()} ref={inputRef} />
+          <div className="flex w-full flex-col items-center p-6 pointer-events-none">
             <div className="grid aspect-square w-14 place-items-center rounded-full bg-pure-greys-800">
               <FiUploadCloud className="text-2xl text-yellow-50" />
             </div>
