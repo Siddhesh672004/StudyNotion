@@ -13,7 +13,7 @@ const Category = require("../models/Category");
 exports.createCourse = async (req, res) => {
   try {
     // Get user ID from request object
-    const { courseName, courseDescription, whatYouWillLearn, price, category} =
+    const { courseName, courseDescription, whatYouWillLearn, price, category, tag = []} =
       req.body;
 
     //get thumbnail
@@ -70,6 +70,7 @@ exports.createCourse = async (req, res) => {
       price,
       category: categoryDetails._id,
       thumbnail: thumbnailImage.secure_url,
+      tag: tag,
     });
 
     //add the new course to the user schema of instructor
@@ -128,7 +129,7 @@ exports.showAllCourses = async (req, res) => {
     .populate("instructor")
     .exec();
 
-    return res.send(200).json({
+    return res.status(200).json({
         success: true,
         message: 'Data for all courses fetched successfully',
         data: allCourses,
