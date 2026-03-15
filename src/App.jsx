@@ -101,7 +101,7 @@ function App() {
      {/* Route for all users */}
 
       <Route path="dashboard/my-profile" element={<MyProfile />} />
-      <Route path="dashboard/Settings" element={<Settings />} />
+      <Route path="dashboard/settings" element={<Settings />} />
       
           {/* Route only for Student  */}
       {
@@ -127,8 +127,6 @@ function App() {
           </>
         )
       }
-
-      <Route path="dashboard/settings" element={<Settings />} />
 
     </Route>
 

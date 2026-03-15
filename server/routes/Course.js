@@ -9,7 +9,12 @@ const { auth,
 
 const { createCourse, 
         showAllCourses,
-        getCourseDetails 
+        getCourseDetails,
+        editCourse,
+        getInstructorCourses,
+        deleteCourse,
+        getFullCourseDetails,
+        updateCourseProgress
       } = require("../controllers/Course");
 
 const { createSection, 
@@ -50,6 +55,18 @@ router.post("/updateSection", auth, isInstructor, updateSection)
 // Delete a Section
 router.post("/deleteSection", auth, isInstructor, deleteSection)
 
+// Edit Course routes
+router.post("/editCourse", auth, isInstructor, editCourse)
+// Get all Courses Under a Specific Instructor
+router.get("/getInstructorCourses", auth, isInstructor, getInstructorCourses)
+// Get Full Details for a Specific Course
+router.post("/getFullCourseDetails", auth, getFullCourseDetails)
+// To Update Course Progress
+router.post("/updateCourseProgress", auth, isStudent, updateCourseProgress)
+
+// Delete a Course
+router.delete("/deleteCourse", auth, isInstructor, deleteCourse)
+
 // Add a Sub Section to a Section
 router.post("/addSubSection", auth, isInstructor, createSubSection)
 // Edit Sub Section
@@ -65,7 +82,7 @@ router.post("/deleteSubSection", auth, isInstructor, deleteSubSection)
 // TODO: Put IsAdmin Middleware here
 router.post("/createCategory", auth, isAdmin, createCategory);
 router.get("/showAllCategories", showAllCategories);
-router.get("/categoryPageDetails", categoryPageDetails);
+router.post("/getCategoryPageDetails", categoryPageDetails);
 
 
 // ********************************************************************************************************

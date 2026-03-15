@@ -1,8 +1,10 @@
 const { instance } = require("../config/razorpay");
 const Course = require("../models/Course");
 const User = require("../models/User");
+const CourseProgress = require("../models/CourseProgress");
 const mailSender = require("../utils/mailSender");
 const { courseEnrollmentEmail } = require("../mail/templates/courseEnrollmentEmail");
+const { paymentSuccessEmail } = require("../mail/templates/paymentSuccessEmail");
 const { default: mongoose } = require("mongoose");
 const crypto = require("crypto");
 
@@ -91,7 +93,7 @@ exports.capturePayment = async (req, res) => {
 
 exports.verifySignature = async (req, res) => {
     // yeh secret Razorpay webhook ka shared secret hota hai
-    const webhookSecret = "12345678";
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || "12345678";
 
     // Razorpay ne jo signature header me bheja hai usse nikaal lo
     const signature = req.headers["x-razorpay-signature"];
@@ -134,6 +136,13 @@ exports.verifySignature = async (req, res) => {
 
         console.log(enrolledStudent);
 
+        // Create CourseProgress for the enrolled student
+        await CourseProgress.create({
+            courseID: courseId,
+            userId: userId,
+            completedVideos: [],
+        });
+
         // confirmation email bhej do: "payment + enrollment done"
         const emailResponse = await mailSender(
             enrolledStudent.email,
@@ -164,3 +173,34 @@ exports.verifySignature = async (req, res) => {
         });
     }
 };
+exports.sendPaymentSuccessEmail = async (req, res) => {
+    const { orderId, paymentId, amount } = req.body;
+
+    const userId = req.user.id;
+
+    if (!orderId || !paymentId || !amount || !userId) {
+        return res.status(400).json({
+            success: false,
+            message: "Please provide all the fields",
+        });
+    }
+
+    try {
+        //student ko dhundo
+        const enrolledStudent = await User.findById(userId);
+        await mailSender(
+            enrolledStudent.email,
+            `Payment Received`,
+            paymentSuccessEmail(`${enrolledStudent.firstName}`,
+            amount/100,
+            orderId, paymentId)
+        )
+    } 
+    catch (error) {
+        console.log("error in sending mail", error)
+        return res.status(500).json({
+            success: false,
+            message: "Could not send email",
+        })
+    }
+}

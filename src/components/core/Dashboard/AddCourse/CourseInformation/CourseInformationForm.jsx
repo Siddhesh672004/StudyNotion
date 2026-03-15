@@ -45,33 +45,41 @@ export default function CourseInformationForm() {
     // if form is in edit mode
     if (editCourse) {
       // console.log("data populated", editCourse)
-      setValue("courseTitle", course.courseName)
-      setValue("courseShortDesc", course.courseDescription)
-      setValue("coursePrice", course.price)
-      setValue("courseTags", course.tag)
-      setValue("courseBenefits", course.whatYouWillLearn)
-      setValue("courseCategory", course.category)
-      setValue("courseRequirements", course.instructions)
-      setValue("courseImage", course.thumbnail)
+      setValue("courseTitle", course?.courseName)
+      setValue("courseShortDesc", course?.courseDescription)
+      setValue("coursePrice", course?.price)
+      setValue("courseTags", course?.tag)
+      setValue("courseBenefits", course?.whatYouWillLearn)
+      setValue("courseCategory", course?.category)
+      setValue("courseRequirements", course?.instructions)
+      setValue("courseImage", course?.thumbnail)
     }
     getCategories()
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  if (loading) {
+      return (
+          <div className="grid place-items-center">
+              <div className="spinner"></div>
+          </div>
+      )
+  }
+
   const isFormUpdated = () => {
     const currentValues = getValues()
     // console.log("changes after editing form values:", currentValues)
     if (
-      currentValues.courseTitle !== course.courseName ||
-      currentValues.courseShortDesc !== course.courseDescription ||
-      currentValues.coursePrice !== course.price ||
-      currentValues.courseTags.toString() !== course.tag.toString() ||
-      currentValues.courseBenefits !== course.whatYouWillLearn ||
-      currentValues.courseCategory._id !== course.category._id ||
+      currentValues.courseTitle !== course?.courseName ||
+      currentValues.courseShortDesc !== course?.courseDescription ||
+      currentValues.coursePrice !== course?.price ||
+      currentValues.courseTags.toString() !== course?.tag.toString() ||
+      currentValues.courseBenefits !== course?.whatYouWillLearn ||
+      currentValues.courseCategory._id !== course?.category?._id ||
       currentValues.courseRequirements.toString() !==
-        course.instructions.toString() ||
-      currentValues.courseImage !== course.thumbnail
+        course?.instructions.toString() ||
+      currentValues.courseImage !== course?.thumbnail
     ) {
       return true
     }
@@ -91,35 +99,35 @@ export default function CourseInformationForm() {
         const currentValues = getValues()
         const formData = new FormData()
         // console.log(data)
-        formData.append("courseId", course._id)
-        if (currentValues.courseTitle !== course.courseName) {
+        formData.append("courseId", course?._id)
+        if (currentValues.courseTitle !== course?.courseName) {
           formData.append("courseName", data.courseTitle)
         }
-        if (currentValues.courseShortDesc !== course.courseDescription) {
+        if (currentValues.courseShortDesc !== course?.courseDescription) {
           formData.append("courseDescription", data.courseShortDesc)
         }
-        if (currentValues.coursePrice !== course.price) {
+        if (currentValues.coursePrice !== course?.price) {
           formData.append("price", data.coursePrice)
         }
-        if (currentValues.courseTags.toString() !== course.tag.toString()) {
+        if (currentValues.courseTags.toString() !== course?.tag.toString()) {
           formData.append("tag", JSON.stringify(data.courseTags))
         }
-        if (currentValues.courseBenefits !== course.whatYouWillLearn) {
+        if (currentValues.courseBenefits !== course?.whatYouWillLearn) {
           formData.append("whatYouWillLearn", data.courseBenefits)
         }
-        if (currentValues.courseCategory._id !== course.category._id) {
+        if (currentValues.courseCategory._id !== course?.category?._id) {
           formData.append("category", data.courseCategory)
         }
         if (
           currentValues.courseRequirements.toString() !==
-          course.instructions.toString()
+          course?.instructions.toString()
         ) {
           formData.append(
             "instructions",
             JSON.stringify(data.courseRequirements)
           )
         }
-        if (currentValues.courseImage !== course.thumbnail) {
+        if (currentValues.courseImage !== course?.thumbnail) {
           formData.append("thumbnailImage", data.courseImage)
         }
         // console.log("Edit Form data: ", formData)

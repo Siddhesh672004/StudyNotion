@@ -1,5 +1,6 @@
 const Profile = require("../models/Profile");
 const User = require("../models/User");
+const Course = require("../models/Course");
 const {uploadImageToCloudinary} = require("../utils/imageUploader");
 
 exports.updateProfile = async (req, res) => {
@@ -67,7 +68,13 @@ exports.deleteAccount = async (req, res) => {
 
         //delete profile
         await Profile.findByIdAndDelete({ _id: userDetails.additionalDetails });
-        // TODO: HW unenroll user from all enrolled courses
+
+        // Unenroll user from all enrolled courses
+        for (const courseId of userDetails.courses) {
+            await Course.findByIdAndUpdate(courseId, {
+                $pull: { studentsEnrolled: id },
+            });
+        }
 
         //delete user
         await User.findByIdAndDelete({ _id: id });
@@ -137,6 +144,70 @@ exports.updateDisplayPicture = async (req, res) => {
         success: false,
         message: error.message,
       })
+    }
+};
+
+exports.getEnrolledCourses = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userDetails = await User.findById(userId)
+            .populate({
+                path: "courses",
+                populate: {
+                    path: "courseContent",
+                    populate: {
+                        path: "subSection",
+                    },
+                },
+            })
+            .exec();
+
+        if (!userDetails) {
+            return res.status(400).json({
+                success: false,
+                message: `Could not find user with id: ${userDetails}`,
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            data: userDetails.courses,
+        });
+
+    } 
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+exports.instructorDashboard = async (req, res) => {
+    try {
+        const courseDetails = await Course.find({ instructor: req.user.id });
+
+        const courseData = courseDetails.map((course) => {
+            const totalStudentsEnrolled = course.studentsEnrolled.length;
+            const totalAmountGenerated = totalStudentsEnrolled * course.price;
+
+            // Create a new object with the additional fields
+            const courseDataWithStats = {
+                _id: course._id,
+                courseName: course.courseName,
+                courseDescription: course.courseDescription,
+                // Include other course properties as needed
+                totalStudentsEnrolled,
+                totalAmountGenerated,
+            };
+
+            return courseDataWithStats;
+        });
+
+        res.status(200).json({ courses: courseData });
+    } 
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
 };
 

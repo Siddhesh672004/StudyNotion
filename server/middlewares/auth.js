@@ -6,11 +6,12 @@ const User = require("../models/User");
 exports.auth = async (req, res, next) => {
     try{
         //extract token from ....
-        const token = req.cookies.token
-                        || req.body.token
-                        || req.header("Authorization").replace("Bearer ", "").replace('"', '');
+        // Now extract the token and after extracting it from the header, remove the "Bearer " part and all the '"' from the token(all)
+        const token = req?.cookies?.token
+                        || req?.body?.token
+                        || req?.header("Authorization")?.replace("Bearer ", "").trim().replace("\"", "");
         
-        //if token is missing, then return response
+        //if token is missing, then return response 
         if(!token) {
             console.log("Token is missing in request");
             return res.status(401).json({
@@ -21,6 +22,7 @@ exports.auth = async (req, res, next) => {
 
         //verify the token
         try {
+            console.log("Token verification started for user:", token);
             const decode = jwt.verify(token, process.env.JWT_SECRET);
             console.log("Token verified successfully for user:", decode.email);
             //IMP

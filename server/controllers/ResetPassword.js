@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const mailSender = require("../utils/mailSender");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 //resetPasswordToken
 exports.resetPasswordToken = async (req, res) => {
@@ -29,7 +30,7 @@ exports.resetPasswordToken = async (req, res) => {
                                                         {new: true});
         
         //create url
-        const url = `http://localhost:3000/update-password/${token}`
+        const url = `${process.env.FRONTEND_URL || "http://localhost:3000"}/update-password/${token}`
 
         //sned email containing the url
         await mailSender(email,
@@ -101,8 +102,8 @@ exports.resetPassword = async (req, res) => {
     }
     catch(error) {
         return res.status(500).json({
-            success: true,
-            message: 'Somthing went wrong while sending reset password mailo',
+            success: false,
+            message: 'Something went wrong while resetting password',
         });
     }
 }

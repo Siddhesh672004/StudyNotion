@@ -4,6 +4,6 @@ const router = express.Router();
 const { contactUsController } = require("../controllers/ContactUs");
 
 //api route
-router.post("/contactUsController", contactUsController);
+router.post("/contact", contactUsController);
 
 module.exports = router;

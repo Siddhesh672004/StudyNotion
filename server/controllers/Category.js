@@ -56,11 +56,11 @@ exports.showAllCategories = async (req, res) => {
 
 exports.categoryPageDetails = async (req, res) => {
     try {
-        const { categoryId } = req.body; // client se aayi category id
+        const { categoryId } = req.body;
 
-        // Get courses for the specified category -> category doc lao + uske courses populate karo
+        // Get courses for the specified category
         const selectedCategory = await Category.findById(categoryId)
-        .populate("Courses")
+        .populate("courses")
         .exec();
 
         console.log(selectedCategory);
@@ -73,7 +73,7 @@ exports.categoryPageDetails = async (req, res) => {
         }
 
         // Handle the case when there are no courses
-        if (selectedCategory.course.length === 0) {
+        if (!selectedCategory.courses || selectedCategory.courses.length === 0) {
         console.log("No courses found for the selected category.");
         return res.status(404).json({
             success: false,
@@ -82,9 +82,9 @@ exports.categoryPageDetails = async (req, res) => {
         }
 
         // selected category ke courses
-        const selectedCourses = selectedCategory.course;
+        const selectedCourses = selectedCategory.courses;
 
-        // Get courses for other categories -> current category ke alawa sab categories
+        // Get courses for other categories
         const categoriesExceptSelected = await Category.find({
         _id: { $ne: categoryId },
         }).populate("courses");
@@ -92,13 +92,13 @@ exports.categoryPageDetails = async (req, res) => {
         // in categories ke saare courses ko ek array me jod lo
         let differentCourses = [];
         for (const category of categoriesExceptSelected) {
-        differentCourses.push(...category.course);
+        differentCourses.push(...(category.courses || []));
         }
 
         // Get top-selling courses across all categories
-        const allCategories = await Category.find().populate("Courses");
-        const allCourses = allCategories.flatMap((category) => category.course);
-        const mostSellingCourses = allCourses; // yahan par sorting/metric add kar sakte ho
+        const allCategories = await Category.find().populate("courses");
+        const allCourses = allCategories.flatMap((category) => category.courses || []);
+        const mostSellingCourses = allCourses;
 
         // final response with 3 sections
         return res.status(200).json({
