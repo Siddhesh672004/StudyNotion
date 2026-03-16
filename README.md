@@ -2,7 +2,8 @@
 
 ## 🌟 Overview
 
-StudyNotion is a comprehensive EdTech (Educational Technology) platform designed to revolutionize the learning experience by providing a seamless, interactive, and accessible education ecosystem. The platform connects students and instructors globally, enabling the creation, consumption, and rating of educational content.
+StudyNotion is comprehensive EdTech (Educational Technology) platform designed to revolutionize the learning experience by providing a seamless, interactive, and accessible education ecosystem. The platform connects students and instructors globally, enabling the creation, consumption, and rating of educational content.
+
 
 ### ✨ Key Highlights
 
