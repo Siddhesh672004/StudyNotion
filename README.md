@@ -44,6 +44,7 @@ StudyNotion follows a **client-server architecture** with three main components:
    - MongoDB stores user data, courses, and content
    - Flexible NoSQL structure for varied content types
    - Scalable solution for growing platform needs
+   - Mongo Db 
 
 ---
 
