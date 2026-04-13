@@ -1,0 +1,31 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-push-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build client and server images
+        run: |
+          docker build -t studynotion-client:latest ./client
+          docker build -t studynotion-server:latest ./server
+
+      - name: Push images to ACR
+        run: |
+          echo "Configure ACR login and push commands using repository secrets."
+          echo "Example: az acr login --name <acr-name>"
+
+      - name: Deploy updated images
+        run: |
+          echo "Configure deployment command for your target environment (ACA/AKS/VM)."
