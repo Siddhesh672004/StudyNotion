@@ -13,7 +13,6 @@ exports.auth = async (req, res, next) => {
         
         //if token is missing, then return response 
         if(!token) {
-            console.log("Token is missing in request");
             return res.status(401).json({
                 success: false,
                 message: 'Token is missing',
@@ -22,14 +21,11 @@ exports.auth = async (req, res, next) => {
 
         //verify the token
         try {
-            console.log("Token verification started for user:", token);
             const decode = jwt.verify(token, process.env.JWT_SECRET);
-            console.log("Token verified successfully for user:", decode.email);
             //IMP
             req.user = decode;
         }   
         catch(error) {
-            console.log("Token verification failed:", error.message);
             return res.status(401).json({
                 success: false,
                 message: 'Token is invalid',
@@ -38,8 +34,6 @@ exports.auth = async (req, res, next) => {
         next();
     }
     catch(error) {
-        console.log("Auth middleware error:", error);
-        console.log("Error stack:", error.stack);
         return res.status(401).json({
             success: false,
             message: 'Something went wrong while validating the token',

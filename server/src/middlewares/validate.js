@@ -1,19 +1,14 @@
+const AppError = require("../utils/AppError");
+
 const validate = (schema) => (req, res, next) => {
-  const result = schema.safeParse({
-    body: req.body,
-    params: req.params,
-    query: req.query,
-  });
+  const result = schema.safeParse(req.body);
 
   if (!result.success) {
-    return res.status(400).json({
-      success: false,
-      message: "Validation failed",
-      errors: result.error.flatten(),
-    });
+    const errors = result.error.flatten().fieldErrors;
+    throw new AppError(422, JSON.stringify(errors));
   }
 
-  req.validated = result.data;
+  req.body = result.data;
   next();
 };
 

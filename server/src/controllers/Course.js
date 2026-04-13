@@ -7,6 +7,10 @@ const CourseProgress = require("../models/CourseProgress");
 const { convertSecondsToDuration } = require("../utils/secToDuration");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const Category = require("../models/Category");
+const { ApiResponse } = require("../utils/apiResponse");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
+const { markLectureComplete: markLectureCompleteInService } = require("../services/progressService");
 
 // require("dotenv").config();
 
@@ -145,52 +149,51 @@ exports.showAllCourses = async (req, res) => {
   }
 };
 
-//getCourseDetails controller
-exports.getCourseDetails = async (req, res) => {
-  try {
-      const { courseId } = req.body;
+// getCourseDetails controller
+exports.getCourseDetails = asyncHandler(async (req, res) => {
+  const courseId = req.params.courseId || req.body.courseId || req.query.courseId;
 
-      // find course details -> course ke saare linked docs ko populate kar do
-      const courseDetails = await Course.find({ _id: courseId })
-        .populate(
-          {
-            path: "instructor",              // instructor document lao
-            populate: {
-              path: "additionalDetails",     // instructor ke profile details bhi lao
-            },
-          }
-        )
-        .populate("category")                // course category attach karo
-        .populate("ratingAndReviews")        // ratings/reviews attach karo
-        .populate({
-          path: "courseContent",             // courseContent sections lao
-          populate: {
-            path: "subSection",              // har section ke subSections bhi lao
-          },
-        })
-        .exec();
-
-      if (!courseDetails) {
-        return res.status(400).json({
-          success: false,
-          message: `Could not find the course with ${courseId}`,
-        });
-      }
-
-      return res.status(200).json({
-          success: true,
-          message: "Course Details fetched successfully",
-          data: courseDetails,
-        });
-  } 
-  catch (error) {
-    console.log(error); 
-    return res.status(500).json({
-        success: false,
-        message: error.message,
-    });
+  if (!courseId) {
+    throw new AppError(400, "courseId is required");
   }
-};
+
+  const course = await Course.findOne({ _id: courseId })
+    .populate("instructor", "firstName lastName email image additionalDetails")
+    .populate("category")
+    .populate("ratingAndReviews")
+    .populate({
+      path: "courseContent",
+      populate: {
+        path: "subSection",
+      },
+    })
+    .populate({
+      path: "sections",
+      populate: {
+        path: "subSection",
+      },
+    })
+    .lean();
+
+  if (!course) {
+    throw new AppError(404, "Course not found");
+  }
+
+  // Keep both keys available during migration.
+  if ((!course.sections || course.sections.length === 0) && course.courseContent?.length) {
+    course.sections = course.courseContent;
+  }
+  if (
+    (!course.courseContent || course.courseContent.length === 0) &&
+    course.sections?.length
+  ) {
+    course.courseContent = course.sections;
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { course }, "Course fetched"));
+});
 
 exports.editCourse = async (req, res) => {
   try {
@@ -408,45 +411,32 @@ exports.getFullCourseDetails = async (req, res) => {
   }
 }
 
-exports.updateCourseProgress = async (req, res) => {
-  const { courseId, subSectionId } = req.body
-  const userId = req.user.id
+exports.markLectureComplete = asyncHandler(async (req, res) => {
+  const { courseId, subSectionId, subsectionId } = req.body;
+  const normalizedSubSectionId = subSectionId || subsectionId;
+  const userId = req.user.id;
 
-  try {
-    // Check if the subsection is valid
-    const subsection = await SubSection.findById(subSectionId)
-    if (!subsection) {
-      return res.status(404).json({ error: "Invalid subsection" })
-    }
-
-    // Find the course progress document for the user and course
-    let courseProgress = await CourseProgress.findOne({
-      courseID: courseId,
-      userId: userId,
-    })
-
-    if (!courseProgress) {
-      // If course progress doesn't exist, create a new one
-      return res.status(404).json({
-        success: false,
-        message: "Course progress does not exist",
-      })
-    } else {
-      // If course progress exists, check if the subsection is already completed
-      if (courseProgress.completedVideos.includes(subSectionId)) {
-        return res.status(400).json({ error: "Subsection already completed" })
-      }
-
-      // Push the subsection into the completedVideos array
-      courseProgress.completedVideos.push(subSectionId)
-    }
-
-    // Save the updated course progress
-    await courseProgress.save()
-
-    return res.status(200).json({ message: "Course progress updated" })
-  } catch (error) {
-    console.error(error)
-    return res.status(500).json({ error: "Internal server error" })
+  if (!courseId || !normalizedSubSectionId) {
+    throw new AppError(400, "courseId and subSectionId are required");
   }
-}
+
+  const courseProgress = await markLectureCompleteInService({
+    courseId,
+    subSectionId: normalizedSubSectionId,
+    userId,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        courseId,
+        subSectionId: normalizedSubSectionId,
+        completedVideos: courseProgress.completedVideos,
+      },
+      "Lecture marked complete"
+    )
+  );
+});
+
+exports.updateCourseProgress = exports.markLectureComplete;

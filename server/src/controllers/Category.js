@@ -1,120 +1,95 @@
 const Category = require("../models/Category");
+const Course = require("../models/Course");
+const { ApiResponse } = require("../utils/apiResponse");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 
 //Create Category handler function
-exports.createCategory = async (req, res) => {
-    try {
-        //fetch data from req body
-        const { name, description } = req.body;
+exports.createCategory = asyncHandler(async (req, res) => {
+    const { name, description } = req.body;
 
-        //validation
-        if(!name || !description) {
-            return res.status(400).json({
-                success: false,
-                message: 'All fields are required',
-            });
-        }
-
-        //create entry in db
-        const CategoryDetails = await Category.create({
-            name: name,
-            description: description,
-        });
-
-        console.log(CategoryDetails);
-
-        //return response
-        return res.status(200).json({
-            success: true,
-            message: 'Category created successfully',
-        });
+    if (!name || !description) {
+        throw new AppError(400, "All fields are required");
     }
-    catch(error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+
+    const category = await Category.create({
+        name,
+        description,
+    });
+
+    return res
+        .status(201)
+        .json(new ApiResponse(201, { category }, "Category created successfully"));
+});
+
+// Navbar categories endpoint
+exports.showAllCategories = asyncHandler(async (req, res) => {
+    const categories = await Category.find({}, "name description")
+        .populate({
+            path: "courses",
+            match: { status: "Published" },
+            select: "_id",
+        })
+        .lean();
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, { categories }, "All categories returned successfully"));
+});
+
+exports.categoryPageDetails = asyncHandler(async (req, res) => {
+    const categoryId = req.query.categoryId || req.body.categoryId;
+
+    if (!categoryId) {
+        throw new AppError(400, "categoryId is required");
     }
-}
 
-exports.showAllCategories = async (req, res) => {
-    try {
-        const allCategory = await Category.find({}, {name: true, description: true});
+    const selectedCategory = await Category.findById(categoryId)
+        .populate({
+            path: "courses",
+            match: { status: "Published" },
+            populate: { path: "instructor", select: "firstName lastName email image" },
+        })
+        .lean();
 
-        res.status(200).json({
-            success: true,
-            message: 'All Category returned successfully',
-            data: allCategory,
-        });
+    if (!selectedCategory) {
+        throw new AppError(404, "Category not found");
     }
-    catch(error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+
+    const differentCategoryDocs = await Category.aggregate([
+        { $match: { _id: { $ne: selectedCategory._id } } },
+        { $sample: { size: 1 } },
+    ]);
+
+    let differentCategory = null;
+    if (differentCategoryDocs.length > 0) {
+        differentCategory = await Category.findById(differentCategoryDocs[0]._id)
+            .populate({
+                path: "courses",
+                match: { status: "Published" },
+                populate: { path: "instructor", select: "firstName lastName email image" },
+            })
+            .lean();
     }
-}
 
-exports.categoryPageDetails = async (req, res) => {
-    try {
-        const { categoryId } = req.body;
+    const allPublishedCourses = await Course.find({ status: "Published" })
+        .populate("instructor", "firstName lastName email image")
+        .lean();
 
-        // Get courses for the specified category
-        const selectedCategory = await Category.findById(categoryId)
-        .populate("courses")
-        .exec();
+    const topSelling = allPublishedCourses
+        .sort(
+            (a, b) =>
+                (b.studentsEnrolled?.length || 0) - (a.studentsEnrolled?.length || 0)
+        )
+        .slice(0, 10);
 
-        console.log(selectedCategory);
-
-        if (!selectedCategory) {
-        console.log("Category not found.");
-        return res
-            .status(404)
-            .json({ success: false, message: "Category not found" });
-        }
-
-        // Handle the case when there are no courses
-        if (!selectedCategory.courses || selectedCategory.courses.length === 0) {
-        console.log("No courses found for the selected category.");
-        return res.status(404).json({
-            success: false,
-            message: "No courses found for the selected category.",
-        });
-        }
-
-        // selected category ke courses
-        const selectedCourses = selectedCategory.courses;
-
-        // Get courses for other categories
-        const categoriesExceptSelected = await Category.find({
-        _id: { $ne: categoryId },
-        }).populate("courses");
-
-        // in categories ke saare courses ko ek array me jod lo
-        let differentCourses = [];
-        for (const category of categoriesExceptSelected) {
-        differentCourses.push(...(category.courses || []));
-        }
-
-        // Get top-selling courses across all categories
-        const allCategories = await Category.find().populate("courses");
-        const allCourses = allCategories.flatMap((category) => category.courses || []);
-        const mostSellingCourses = allCourses;
-
-        // final response with 3 sections
-        return res.status(200).json({
-        success: true,
-        data: {
-            selectedCourses,
-            differentCourses,
-            mostSellingCourses,
-        },
-        });
-    }
-    catch(error) {
-        console.log(error);
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
-    }
-}
+    return res.status(200).json(
+        new ApiResponse(200, {
+            selectedCategory,
+            differentCategory,
+            topSelling,
+            // Kept for backward compatibility with existing Catalog page usage.
+            mostSellingCourses: topSelling,
+        })
+    );
+});

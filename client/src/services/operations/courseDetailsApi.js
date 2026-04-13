@@ -54,7 +54,14 @@ export const fetchCourseDetails = async (courseId) => {
     if (!response.data.success) {
       throw new Error(response.data.message)
     }
-    result = response.data
+
+    // Normalize old/new backend shapes during contract migration.
+    const payload = response.data
+    if (payload?.data?.course && !payload?.data?.courseDetails) {
+      payload.data.courseDetails = payload.data.course
+    }
+
+    result = payload
   } catch (error) {
     console.log("COURSE_DETAILS_API API ERROR............", error)
     result = error.response.data
@@ -74,7 +81,7 @@ export const fetchCourseCategories = async () => {
     if (!response?.data?.success) {
       throw new Error("Could Not Fetch Course Categories")
     }
-    result = response?.data?.data
+    result = response?.data?.data?.categories || response?.data?.data || []
   } catch (error) {
     console.log("COURSE_CATEGORY_API API ERROR............", error)
     toast.error(error.message)

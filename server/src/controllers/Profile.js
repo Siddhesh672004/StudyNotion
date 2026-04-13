@@ -2,6 +2,7 @@ const Profile = require("../models/Profile");
 const User = require("../models/User");
 const Course = require("../models/Course");
 const {uploadImageToCloudinary} = require("../utils/imageUploader");
+const { ApiResponse } = require("../utils/apiResponse");
 
 exports.updateProfile = async (req, res) => {
     try {
@@ -31,12 +32,14 @@ exports.updateProfile = async (req, res) => {
         profileDetails.contactNumber = contactNumber;
         await profileDetails.save();
 
+        const updatedUserDetails = await User.findById(id)
+            .populate("additionalDetails")
+            .lean();
+
         //return response
-        return res.status(200).json({
-                success: true,
-                message: "Profile updated successfully",
-                profileDetails,
-            });
+        return res
+            .status(200)
+            .json(new ApiResponse(200, { updatedUserDetails }, "Profile updated"));
     } 
     catch (error) {
         return res.status(500).json({

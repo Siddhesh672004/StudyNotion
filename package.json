@@ -14,6 +14,7 @@
     "docker:prod": "docker compose -f docker-compose.prod.yml up --build -d"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "supertest": "^7.2.2"
   }
 }

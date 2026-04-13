@@ -6,7 +6,31 @@ const jwt = require("jsonwebtoken");
 const Profile = require("../models/Profile");
 const mailSender = require("../utils/mailSender");
 const { passwordUpdated } = require("../mail/templates/passwordUpdate");
+const { ApiResponse } = require("../utils/apiResponse");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 require("dotenv").config();
+
+const generateAndStoreOtp = async (email) => {
+  let otp = otpGenerator.generate(6, {
+    upperCaseAlphabets: false,
+    lowerCaseAlphabets: false,
+    specialChars: false,
+  });
+
+  let result = await OTP.findOne({ otp });
+
+  while (result) {
+    otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      lowerCaseAlphabets: false,
+      specialChars: false,
+    });
+    result = await OTP.findOne({ otp });
+  }
+
+  await OTP.create({ email, otp });
+};
 
 //Send otp Controller
 exports.sendOTP = async (req, res) => {
@@ -19,52 +43,37 @@ exports.sendOTP = async (req, res) => {
 
     //if user already exists, then return a response
     if (checkUserPresent) {
-      return res.status(401).json({
-        success: false,
-        message: "User already registered",
-      });
+      throw new AppError(409, "User already registered");
     }
 
-    //generate otp
-    var otp = otpGenerator.generate(6, {
-      upperCaseAlphabets: false,
-      lowerCaseAlphabets: false,
-      specialChars: false,
-    });
-    console.log("OTP Generated: ", otp);
-
-    //check the generated otp is unique or not
-    //this code can be changed, Task: to find alternate pacakage which generate the unique otp itsef
-    let result = await OTP.findOne({ otp: otp });
-
-    while (result) {
-      otp = otpGenerator.generate(6, {
-        upperCaseAlphabets: false,
-        lowerCaseAlphabets: false,
-        specialChars: false,
-      });
-      result = await OTP.findOne({ otp: otp });
-    }
-
-    const otpPayload = { email, otp };
-
-    //create an entry for otp
-    const otpBody = await OTP.create(otpPayload);
-    console.log(otpBody);
+    await generateAndStoreOtp(email);
 
     //return response successful
-    res.status(200).json({
-      success: true,
-      message: "OTP sent successfully",
-    });
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { email }, "OTP sent successfully"));
   } catch (error) {
     console.log(error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    const statusCode = error.statusCode || 500;
+    return res
+      .status(statusCode)
+      .json(new ApiResponse(statusCode, null, error.message || "OTP send failed"));
   }
 };
+
+exports.resendOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new AppError(400, "email is required");
+  }
+
+  await generateAndStoreOtp(email);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { email }, "OTP resent successfully"));
+});
 
 //SignUp controller
 
@@ -226,15 +235,15 @@ exports.login = async (req, res) => {
 
       //create cookie and send response
       const options = {
-        expires: new Date(Date.now() + 33 * 24 * 60 * 60 * 1000),
         httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 3 * 24 * 60 * 60 * 1000,
       };
-      res.cookie("token", token, options).status(200).json({
-        success: true,
-        token,
-        user,
-        message: "Logged in Successfully",
-      });
+      res
+        .cookie("token", token, options)
+        .status(200)
+        .json(new ApiResponse(200, { token, user }, "Logged in Successfully"));
     } else {
       return res.status(401).json({
         success: false,
