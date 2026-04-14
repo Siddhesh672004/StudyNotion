@@ -1,41 +1,35 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
 const request = require("supertest");
-
-process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
 const app = require("../../server/src/app");
 const OTP = require("../../server/src/models/OTP");
 
-test("POST /api/v1/auth/resendotp returns standardized envelope", async (t) => {
-	const originalFindOne = OTP.findOne;
-	const originalCreate = OTP.create;
+describe("Auth API contracts", () => {
+	it("POST /api/v1/auth/resendotp returns standardized envelope", async () => {
+		const findOneSpy = jest.spyOn(OTP, "findOne").mockResolvedValue(null);
+		const createSpy = jest
+			.spyOn(OTP, "create")
+			.mockImplementation(async ({ email, otp }) => ({ email, otp }));
 
-	OTP.findOne = async () => null;
-	OTP.create = async ({ email, otp }) => ({ email, otp });
+		const response = await request(app)
+			.post("/api/v1/auth/resendotp")
+			.send({ email: "tester@example.com" });
 
-	t.after(() => {
-		OTP.findOne = originalFindOne;
-		OTP.create = originalCreate;
+		expect(findOneSpy).toHaveBeenCalled();
+		expect(createSpy).toHaveBeenCalled();
+		expect(response.status).toBe(200);
+		expect(response.body.success).toBe(true);
+		expect(response.body.statusCode).toBe(200);
+		expect(response.body.message).toBe("OTP resent successfully");
+		expect(response.body.data.email).toBe("tester@example.com");
 	});
 
-	const response = await request(app)
-		.post("/api/v1/auth/resendotp")
-		.send({ email: "tester@example.com" });
+	it("POST /api/v1/auth/resendotp validates email and returns 422", async () => {
+		const response = await request(app)
+			.post("/api/v1/auth/resendotp")
+			.send({ email: "bad-email" });
 
-	assert.equal(response.status, 200);
-	assert.equal(response.body.success, true);
-	assert.equal(response.body.statusCode, 200);
-	assert.equal(response.body.message, "OTP resent successfully");
-	assert.equal(response.body.data.email, "tester@example.com");
-});
-
-test("POST /api/v1/auth/resendotp validates email and returns 422", async () => {
-	const response = await request(app)
-		.post("/api/v1/auth/resendotp")
-		.send({ email: "bad-email" });
-
-	assert.equal(response.status, 422);
-	assert.equal(response.body.success, false);
-	assert.equal(response.body.statusCode, 422);
+		expect(response.status).toBe(422);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(422);
+	});
 });

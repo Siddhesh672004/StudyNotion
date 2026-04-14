@@ -1,56 +1,70 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
 const request = require("supertest");
 const jwt = require("jsonwebtoken");
-
-process.env.JWT_SECRET = process.env.JWT_SECRET || "test-secret";
 
 const app = require("../../server/src/app");
 const Course = require("../../server/src/models/Course");
 const { instance } = require("../../server/src/config/razorpay");
 
-const createStudentToken = () =>
+const createStudentToken = (id = "507f1f77bcf86cd799439011") =>
 	jwt.sign(
 		{
-			id: "507f1f77bcf86cd799439011",
+			id,
 			email: "student@example.com",
 			accountType: "Student",
 		},
 		process.env.JWT_SECRET
 	);
 
-test("POST /api/v1/payment/capturePayment returns standardized order response", async (t) => {
-	const originalFindById = Course.findById;
-	const originalOrderCreate = instance.orders.create;
+describe("Payment API contracts", () => {
+	it("POST /api/v1/payment/capturePayment returns standardized order response", async () => {
+		const validCourseId = "507f1f77bcf86cd799439012";
 
-	Course.findById = async () => ({
-		_id: "course-1",
-		price: 999,
-		studentsEnrolled: [],
+		jest.spyOn(Course, "findById").mockResolvedValue({
+			_id: validCourseId,
+			price: 999,
+			studentsEnrolled: [],
+		});
+
+		jest.spyOn(instance.orders, "create").mockImplementation(async (options) => ({
+			id: "order_test_123",
+			amount: options.amount,
+			currency: options.currency,
+			receipt: options.receipt,
+			notes: options.notes,
+		}));
+
+		const response = await request(app)
+			.post("/api/v1/payment/capturePayment")
+			.set("Authorization", `Bearer ${createStudentToken()}`)
+			.send({ courses: [validCourseId] });
+
+		expect(response.status).toBe(200);
+		expect(response.body.success).toBe(true);
+		expect(response.body.statusCode).toBe(200);
+		expect(response.body.data.id).toBe("order_test_123");
+		expect(response.body.data.amount).toBe(99900);
+		expect(response.body.data.currency).toBe("INR");
 	});
 
-	instance.orders.create = async (options) => ({
-		id: "order_test_123",
-		amount: options.amount,
-		currency: options.currency,
-		receipt: options.receipt,
-		notes: options.notes,
+	it("POST /api/v1/payment/capturePayment rejects missing courses", async () => {
+		const response = await request(app)
+			.post("/api/v1/payment/capturePayment")
+			.set("Authorization", `Bearer ${createStudentToken()}`)
+			.send({});
+
+		expect(response.status).toBe(400);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(400);
 	});
 
-	t.after(() => {
-		Course.findById = originalFindById;
-		instance.orders.create = originalOrderCreate;
+	it("POST /api/v1/payment/capturePayment rejects invalid course IDs", async () => {
+		const response = await request(app)
+			.post("/api/v1/payment/capturePayment")
+			.set("Authorization", `Bearer ${createStudentToken()}`)
+			.send({ courses: ["course-1"] });
+
+		expect(response.status).toBe(400);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(400);
 	});
-
-	const response = await request(app)
-		.post("/api/v1/payment/capturePayment")
-		.set("Authorization", `Bearer ${createStudentToken()}`)
-		.send({ courses: ["course-1"] });
-
-	assert.equal(response.status, 200);
-	assert.equal(response.body.success, true);
-	assert.equal(response.body.statusCode, 200);
-	assert.equal(response.body.data.id, "order_test_123");
-	assert.equal(response.body.data.amount, 99900);
-	assert.equal(response.body.data.currency, "INR");
 });

@@ -1,5 +1,3 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
 const request = require("supertest");
 
 const app = require("../../server/src/app");
@@ -16,31 +14,50 @@ const createQueryChain = (result) => {
 	return chain;
 };
 
-test("POST /api/v1/course/getCourseDetails returns object envelope", async (t) => {
-	const originalFindOne = Course.findOne;
+describe("Course API contracts", () => {
+	it("POST /api/v1/course/getCourseDetails returns object envelope", async () => {
+		jest.spyOn(Course, "findOne").mockImplementation(() =>
+			createQueryChain({
+				_id: "course-1",
+				courseName: "Contract Testing",
+				instructor: { firstName: "Ada", lastName: "Lovelace" },
+				courseContent: [],
+				sections: [],
+				ratingAndReviews: [],
+			})
+		);
 
-	Course.findOne = () =>
-		createQueryChain({
-			_id: "course-1",
-			courseName: "Contract Testing",
-			instructor: { firstName: "Ada", lastName: "Lovelace" },
-			courseContent: [],
-			sections: [],
-			ratingAndReviews: [],
-		});
+		const response = await request(app)
+			.post("/api/v1/course/getCourseDetails")
+			.send({ courseId: "course-1" });
 
-	t.after(() => {
-		Course.findOne = originalFindOne;
+		expect(response.status).toBe(200);
+		expect(response.body.success).toBe(true);
+		expect(response.body.statusCode).toBe(200);
+		expect(response.body.data.course).toBeTruthy();
+		expect(response.body.data.course._id).toBe("course-1");
+		expect(response.body.data.course.courseName).toBe("Contract Testing");
 	});
 
-	const response = await request(app)
-		.post("/api/v1/course/getCourseDetails")
-		.send({ courseId: "course-1" });
+	it("POST /api/v1/course/getCourseDetails requires courseId", async () => {
+		const response = await request(app)
+			.post("/api/v1/course/getCourseDetails")
+			.send({});
 
-	assert.equal(response.status, 200);
-	assert.equal(response.body.success, true);
-	assert.equal(response.body.statusCode, 200);
-	assert.ok(response.body.data.course);
-	assert.equal(response.body.data.course._id, "course-1");
-	assert.equal(response.body.data.course.courseName, "Contract Testing");
+		expect(response.status).toBe(400);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(400);
+	});
+
+	it("POST /api/v1/course/getCourseDetails returns 404 when course is missing", async () => {
+		jest.spyOn(Course, "findOne").mockImplementation(() => createQueryChain(null));
+
+		const response = await request(app)
+			.post("/api/v1/course/getCourseDetails")
+			.send({ courseId: "course-404" });
+
+		expect(response.status).toBe(404);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(404);
+	});
 });

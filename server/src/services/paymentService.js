@@ -15,16 +15,24 @@ const validateCoursesForPayment = async ({ courses, userId }) => {
     throw new AppError(400, "Please provide valid course IDs");
   }
 
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new AppError(400, "Invalid user id in token");
+  }
+
   let totalAmount = 0;
+  const uid = new mongoose.Types.ObjectId(userId);
 
   for (const courseId of courses) {
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      throw new AppError(400, "Invalid course ID");
+    }
+
     const course = await Course.findById(courseId);
 
     if (!course) {
       throw new AppError(404, "Could not find the course");
     }
 
-    const uid = new mongoose.Types.ObjectId(userId);
     const isAlreadyEnrolled = course.studentsEnrolled.some(
       (studentId) => studentId.toString() === uid.toString()
     );

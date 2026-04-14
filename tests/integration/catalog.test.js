@@ -1,5 +1,3 @@
-const test = require("node:test");
-const assert = require("node:assert/strict");
 const request = require("supertest");
 
 const app = require("../../server/src/app");
@@ -17,61 +15,63 @@ const createQueryChain = (result) => {
 	return chain;
 };
 
-test("POST /api/v1/course/getCategoryPageDetails returns catalog contract keys", async (t) => {
-	const originalFindById = Category.findById;
-	const originalAggregate = Category.aggregate;
-	const originalCourseFind = Course.find;
-
-	const selectedCategory = {
-		_id: "cat-main",
-		name: "Development",
-		description: "Selected category",
-		courses: [{ _id: "course-1", instructor: { firstName: "Alice" } }],
-	};
-
-	const differentCategory = {
-		_id: "cat-other",
-		name: "Design",
-		description: "Different category",
-		courses: [{ _id: "course-2", instructor: { firstName: "Bob" } }],
-	};
-
-	Category.findById = (id) => {
-		if (String(id) === "cat-main") {
-			return createQueryChain(selectedCategory);
-		}
-		return createQueryChain(differentCategory);
-	};
-
-	Category.aggregate = async () => [{ _id: "cat-other" }];
-
-	Course.find = () => {
-		const chain = {
-			populate() {
-				return chain;
-			},
-			lean: async () => [
-				{ _id: "course-a", studentsEnrolled: ["u1"] },
-				{ _id: "course-b", studentsEnrolled: ["u1", "u2", "u3"] },
-			],
+describe("Catalog API contracts", () => {
+	it("POST /api/v1/course/getCategoryPageDetails returns catalog contract keys", async () => {
+		const selectedCategory = {
+			_id: "cat-main",
+			name: "Development",
+			description: "Selected category",
+			courses: [{ _id: "course-1", instructor: { firstName: "Alice" } }],
 		};
 
-		return chain;
-	};
+		const differentCategory = {
+			_id: "cat-other",
+			name: "Design",
+			description: "Different category",
+			courses: [{ _id: "course-2", instructor: { firstName: "Bob" } }],
+		};
 
-	t.after(() => {
-		Category.findById = originalFindById;
-		Category.aggregate = originalAggregate;
-		Course.find = originalCourseFind;
+		jest.spyOn(Category, "findById").mockImplementation((id) => {
+			if (String(id) === "cat-main") {
+				return createQueryChain(selectedCategory);
+			}
+			return createQueryChain(differentCategory);
+		});
+
+		jest.spyOn(Category, "aggregate").mockResolvedValue([{ _id: "cat-other" }]);
+
+		jest.spyOn(Course, "find").mockImplementation(() => {
+			const chain = {
+				populate() {
+					return chain;
+				},
+				lean: async () => [
+					{ _id: "course-a", studentsEnrolled: ["u1"] },
+					{ _id: "course-b", studentsEnrolled: ["u1", "u2", "u3"] },
+				],
+			};
+
+			return chain;
+		});
+
+		const response = await request(app)
+			.post("/api/v1/course/getCategoryPageDetails")
+			.send({ categoryId: "cat-main" });
+
+		expect(response.status).toBe(200);
+		expect(response.body.success).toBe(true);
+		expect(response.body.data.selectedCategory._id).toBe("cat-main");
+		expect(response.body.data.differentCategory._id).toBe("cat-other");
+		expect(response.body.data.topSelling[0]._id).toBe("course-b");
 	});
 
-	const response = await request(app)
-		.post("/api/v1/course/getCategoryPageDetails")
-		.send({ categoryId: "cat-main" });
+	it("POST /api/v1/course/getCategoryPageDetails requires categoryId", async () => {
+		const response = await request(app)
+			.post("/api/v1/course/getCategoryPageDetails")
+			.send({});
 
-	assert.equal(response.status, 200);
-	assert.equal(response.body.success, true);
-	assert.equal(response.body.data.selectedCategory._id, "cat-main");
-	assert.equal(response.body.data.differentCategory._id, "cat-other");
-	assert.equal(response.body.data.topSelling[0]._id, "course-b");
+		expect(response.status).toBe(400);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(400);
+	});
 });
