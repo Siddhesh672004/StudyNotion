@@ -1,27 +1,14 @@
-import { useEffect, useState } from "react"
 import { VscAdd } from "react-icons/vsc"
-import { useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
-import { fetchInstructorCourses } from "../../../services/operations/courseDetailsApi"
 import IconBtn from "../../common/IconBtn"
 import CoursesTable from "./InstructorCourses/CoursesTable"
+import { useInstructorCourses } from "../../../hooks/useInstructorCourses"
 
 export default function MyCourses() {
-  const { token } = useSelector((state) => state.auth)
   const navigate = useNavigate()
-  const [courses, setCourses] = useState([])
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      const result = await fetchInstructorCourses(token)
-      if (result) {
-        setCourses(result)
-      }
-    }
-    fetchCourses()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  
+  const { data: courses, isLoading, isError, refetch } = useInstructorCourses()
 
   return (
     <div>
@@ -34,7 +21,27 @@ export default function MyCourses() {
           <VscAdd />
         </IconBtn>
       </div>
-      {courses && <CoursesTable courses={courses} setCourses={setCourses} />}
+
+      {isLoading ? (
+        <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
+          <div className="spinner"></div>
+        </div>
+      ) : isError ? (
+        <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
+          <div className="flex flex-col items-center gap-4">
+            <p className="text-richblack-5">Could not fetch courses. Please try again.</p>
+            <button onClick={() => refetch()} className="bg-yellow-50 px-4 py-2 text-black rounded-md font-semibold">
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : courses?.length === 0 ? (
+        <div className="grid h-[10vh] w-full place-content-center text-richblack-5">
+          You have not created any courses yet.
+        </div>
+      ) : (
+        <CoursesTable courses={courses} refetch={refetch} />
+      )}
     </div>
   )
 }

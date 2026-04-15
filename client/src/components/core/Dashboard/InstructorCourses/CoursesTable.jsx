@@ -1,4 +1,4 @@
-import { useDispatch, useSelector } from "react-redux"
+import { useSelector } from "react-redux"
 import { Table, Tbody, Td, Th, Thead, Tr } from "react-super-responsive-table"
 
 import "react-super-responsive-table/dist/SuperResponsiveTableStyle.css"
@@ -12,12 +12,11 @@ import { useNavigate } from "react-router-dom"
 import { formatDate } from "../../../../services/formatDate"
 import {
   deleteCourse,
-  fetchInstructorCourses,
 } from "../../../../services/operations/courseDetailsApi"
 import { COURSE_STATUS } from "../../../../utils/constants"
 import ConfirmationModal from "../../../common/ConfirmationModal"
 
-export default function CoursesTable({ courses, setCourses }) {
+export default function CoursesTable({ courses, refetch }) {
   const navigate = useNavigate()
   const { token } = useSelector((state) => state.auth)
   const [loading, setLoading] = useState(false)
@@ -27,10 +26,7 @@ export default function CoursesTable({ courses, setCourses }) {
   const handleCourseDelete = async (courseId) => {
     setLoading(true)
     await deleteCourse({ courseId: courseId }, token)
-    const result = await fetchInstructorCourses(token)
-    if (result) {
-      setCourses(result)
-    }
+    await refetch()
     setConfirmationModal(null)
     setLoading(false)
   }

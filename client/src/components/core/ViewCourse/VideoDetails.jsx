@@ -7,7 +7,7 @@ import { useLocation } from "react-router-dom"
 import { BigPlayButton, Player } from "video-react"
 
 import { markLectureAsComplete } from "../../../services/operations/courseDetailsApi"
-import { updateCompletedLectures } from "../../../slices/viewCourseSlice"
+import { updateCompletedLectures } from "../../../store/slices/viewCourseSlice"
 import IconBtn from "../../common/IconBtn"
 
 const VideoDetails = () => {
@@ -50,7 +50,7 @@ const VideoDetails = () => {
         setVideoEnded(false)
       }
     })()
-  }, [courseSectionData, courseEntireData, location.pathname])
+  }, [courseSectionData, courseEntireData, location.pathname, courseId, navigate, sectionId, subSectionId])
 
   // check if the lecture is the first video of the course
   const isFirstVideo = () => {

@@ -35,21 +35,29 @@ describe("Profile API contracts", () => {
       },
     };
 
+    const userDoc = {
+      _id: "student-1",
+      firstName: "Test",
+      lastName: "User",
+      additionalDetails: "profile-1",
+      saveCalled: false,
+      save: async function saveUser() {
+        this.saveCalled = true;
+      },
+    };
+
     let findByIdCalls = 0;
     jest.spyOn(User, "findById").mockImplementation((id) => {
       findByIdCalls += 1;
 
       if (findByIdCalls === 1) {
-        return Promise.resolve({
-          _id: id,
-          additionalDetails: "profile-1",
-        });
+        return Promise.resolve(userDoc);
       }
 
       return createQueryChain({
         _id: id,
-        firstName: "Test",
-        lastName: "User",
+        firstName: userDoc.firstName,
+        lastName: userDoc.lastName,
         image: "",
         additionalDetails: {
           _id: "profile-1",
@@ -67,6 +75,8 @@ describe("Profile API contracts", () => {
       .put("/api/v1/profile/updateProfile")
       .set("Authorization", `Bearer ${createStudentToken()}`)
       .send({
+        firstName: "Updated",
+        lastName: "Name",
         dateOfBirth: "2000-01-01",
         about: "About me",
         contactNumber: "9999999999",
@@ -78,7 +88,10 @@ describe("Profile API contracts", () => {
     expect(response.body.statusCode).toBe(200);
     expect(response.body.data.updatedUserDetails).toBeTruthy();
     expect(response.body.data.updatedUserDetails._id).toBe("student-1");
+    expect(response.body.data.updatedUserDetails.firstName).toBe("Updated");
+    expect(response.body.data.updatedUserDetails.lastName).toBe("Name");
     expect(profileDoc.about).toBe("About me");
     expect(profileDoc.saveCalled).toBe(true);
+    expect(userDoc.saveCalled).toBe(true);
   });
 });

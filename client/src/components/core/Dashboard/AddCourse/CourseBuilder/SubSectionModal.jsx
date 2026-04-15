@@ -8,7 +8,7 @@ import {
   createSubSection,
   updateSubSection,
 } from "../../../../../services/operations/courseDetailsApi"
-import { setCourse } from "../../../../../slices/courseSlice"
+import { setCourse } from "../../../../../store/slices/courseSlice"
 import IconBtn from "../../../../common/IconBtn"
 import Upload from "../Upload"
 
@@ -43,7 +43,7 @@ export default function SubSectionModal({
       setValue("lectureDesc", modalData.description)
       setValue("lectureVideo", modalData.videoUrl)
     }
-  }, [])
+  }, [view, edit, modalData?.title, modalData?.description, modalData?.videoUrl, setValue])
 
   // detect whether form is updated or not
   const isFormUpdated = () => {

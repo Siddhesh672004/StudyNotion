@@ -1,7 +1,7 @@
 import { toast } from "react-hot-toast"
 
-// import { updateCompletedLectures } from "../../slices/viewCourseSlice"
-// import { setLoading } from "../../slices/profileSlice";
+// import { updateCompletedLectures } from "../../store/slices/viewCourseSlice"
+// import { setLoading } from "../../store/slices/profileSlice";
 import { apiConnector } from "../apiconnector"
 import { courseEndpoints } from "../apis"
 
@@ -58,7 +58,7 @@ export const fetchCourseDetails = async (courseId) => {
     // Normalize old/new backend shapes during contract migration.
     const payload = response.data
     if (payload?.data?.course && !payload?.data?.courseDetails) {
-      payload.data.courseDetails = payload.data.course
+      payload.data.courseDetails = payload.data.data.course
     }
 
     result = payload
