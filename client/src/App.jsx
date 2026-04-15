@@ -16,7 +16,6 @@ import Dashboard from "./pages/Dashboard";
 import PrivateRoute from "./components/core/Auth/PrivateRoute";
 import Error from "./pages/Error"
 import Settings from "./components/core/Dashboard/Settings";
-import { useSelector } from "react-redux";
 import EnrolledCourses from "./components/core/Dashboard/EnrolledCourses";
 import Cart from "./components/core/Dashboard/Cart";
 import { ACCOUNT_TYPE } from "./utils/constants";
@@ -30,10 +29,9 @@ import VideoDetails from "./components/core/ViewCourse/VideoDetails"
 import Instructor from "./components/core/Dashboard/Instructor"
 
 
+import RoleGuard from "./components/core/Auth/RoleGuard";
+
 function App() {
-
-  const { user } = useSelector((state) => state.profile)
-
 
   return (
    <div className="w-screen min-h-screen bg-richblack-900 flex flex-col font-inter">
@@ -104,30 +102,14 @@ function App() {
       <Route path="dashboard/settings" element={<Settings />} />
       
           {/* Route only for Student  */}
-      {
-        user?.accountType === ACCOUNT_TYPE.STUDENT && (
-          <>
-          <Route path="dashboard/cart" element={<Cart />} />
-          <Route path="dashboard/enrolled-courses" element={<EnrolledCourses />} />
-          </>
-        )
-      }
+          <Route path="dashboard/cart" element={<RoleGuard role={ACCOUNT_TYPE.STUDENT}><Cart /></RoleGuard>} />
+          <Route path="dashboard/enrolled-courses" element={<RoleGuard role={ACCOUNT_TYPE.STUDENT}><EnrolledCourses /></RoleGuard>} />
 
-      {
-        user?.accountType === ACCOUNT_TYPE.INSTRUCTOR && (
-          <>
-          <Route path="dashboard/instructor" element={<Instructor />} />
-
-          <Route path="dashboard/add-course" element={<AddCourse />} />
-          <Route path="dashboard/my-courses" element={<MyCourses/>} />
-          <Route path="dashboard/edit-course/:courseId" element={<EditCourse />} />
-
-
-          
-          </>
-        )
-      }
-
+      {/* Route only for Instructor  */}
+          <Route path="dashboard/instructor" element={<RoleGuard role={ACCOUNT_TYPE.INSTRUCTOR}><Instructor /></RoleGuard>} />        
+          <Route path="dashboard/add-course" element={<RoleGuard role={ACCOUNT_TYPE.INSTRUCTOR}><AddCourse /></RoleGuard>} />
+          <Route path="dashboard/my-courses" element={<RoleGuard role={ACCOUNT_TYPE.INSTRUCTOR}><MyCourses/></RoleGuard>} />
+          <Route path="dashboard/edit-course/:courseId" element={<RoleGuard role={ACCOUNT_TYPE.INSTRUCTOR}><EditCourse /></RoleGuard>} />
     </Route>
 
             {/* For the watching course lectures */}
@@ -138,14 +120,10 @@ function App() {
             </PrivateRoute>
           }
         >
-          {user?.accountType === ACCOUNT_TYPE.STUDENT && (
-            <>
               <Route
                 path="view-course/:courseId/section/:sectionId/sub-section/:subSectionId"
-                element={<VideoDetails />}
+                element={<RoleGuard role={ACCOUNT_TYPE.STUDENT}><VideoDetails /></RoleGuard>}
               />
-            </>
-          )}
         </Route>
    
   {/* error 404 */}

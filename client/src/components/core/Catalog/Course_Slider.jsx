@@ -1,7 +1,7 @@
 import React from "react"
  //Import Swiper React components
 import { Swiper, SwiperSlide } from "swiper/react"
-import {  Pagination,FreeMode } from 'swiper/modules'
+import {  Pagination,FreeMode } from 'swiper'
 
 //Import Swiper styles
 import "swiper/css"
@@ -13,16 +13,19 @@ import "swiper/css/pagination"
 
 // import { getAllCourses } from "../../services/operations/courseDetailsAPI"
 //import Course_Card from "./Course_Card"
-import Course_Card from "./Course_card"
+import CourseCard from "./Course_card"
 
 function Course_Slider({ Courses }) {
+  const courseItems = Array.isArray(Courses) ? Courses : []
+  const canLoop = courseItems.length > 3
+
   return (
     <>
-      {Courses?.length ? (
+      {courseItems.length ? (
         <Swiper
           slidesPerView={1}
           spaceBetween={25}
-          loop={true}
+          loop={canLoop}
           pagination={{ clickable: true }}
           modules={[FreeMode, Pagination]}
           breakpoints={{
@@ -32,9 +35,9 @@ function Course_Slider({ Courses }) {
           }}
           className="max-h-[30rem]"
         >
-          {Courses?.map((course, i) => (
+          {courseItems.map((course, i) => (
             <SwiperSlide key={i}>
-              <Course_Card course={course} Height={"h-[250px]"} />
+              <CourseCard course={course} Height={"h-[250px]"} />
             </SwiperSlide>
           ))}
         </Swiper>

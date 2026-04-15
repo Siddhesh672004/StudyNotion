@@ -1,6 +1,6 @@
 import { toast } from "react-hot-toast"
 
-import { setLoading, setUser } from "../../slices/profileSlice"
+import { setLoading, setUser } from "../../store/slices/profileSlice"
 import { apiConnector } from "../apiconnector"
 import { profileEndpoints } from "../apis"
 import { logout } from "./authAPI"
@@ -20,14 +20,23 @@ export function getUserDetails(token, navigate) {
       if (!response.data.success) {
         throw new Error(response.data.message)
       }
-      const userImage = response.data.data.image
-        ? response.data.data.image
-        : `https://api.dicebear.com/5.x/initials/svg?seed=${response.data.data.firstName} ${response.data.data.lastName}`
-      dispatch(setUser({ ...response.data.data, image: userImage }))
+      const updatedUserDetails = response.data.data.updatedUserDetails || response.data.data;
+      const userImage = updatedUserDetails.image
+        ? updatedUserDetails.image
+        : `https://api.dicebear.com/5.x/initials/svg?seed=${updatedUserDetails.firstName} ${updatedUserDetails.lastName}`
+      dispatch(setUser({ ...updatedUserDetails, image: userImage }))
     } catch (error) {
-      dispatch(logout(navigate))
+      const message = error?.response?.data?.message || ""
+      const isTokenAuthError =
+        message === "Token is missing" ||
+        message === "Token is invalid" ||
+        message === "Something went wrong while validating the token"
+
+      if (isTokenAuthError && navigate) {
+        dispatch(logout(navigate))
+      }
       console.log("GET_USER_DETAILS API ERROR............", error)
-      toast.error("Could Not Get User Details")
+      toast.error(message || "Could Not Get User Details")
     }
     toast.dismiss(toastId)
     dispatch(setLoading(false))
@@ -73,7 +82,7 @@ export async function getInstructorData(token) {
       Authorization: `Bearer ${token}`,
     })
     console.log("GET_INSTRUCTOR_DATA_API API RESPONSE............", response)
-    result = response?.data?.courses
+    result = response?.data?.data?.courses || response?.data?.courses;
   } catch (error) {
     console.log("GET_INSTRUCTOR_DATA_API API ERROR............", error)
     toast.error("Could Not Get Instructor Data")

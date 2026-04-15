@@ -6,7 +6,7 @@ import { FaShareSquare } from "react-icons/fa"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
-import { addToCart } from "../../../slices/cartSlice"
+import { addToCart } from "../../../store/slices/cartSlice"
 import { ACCOUNT_TYPE } from "../../../utils/constants"
 
 
@@ -26,7 +26,6 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse }) {
   const {
     thumbnail: ThumbnailImage,
     price: CurrentPrice,
-    _id: courseId,
   } = course
 
   // console.log("*******course information " , course)

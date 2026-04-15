@@ -12,10 +12,10 @@ import RatingStars from "../components/common/ratingStars"
 import CourseAccordionBar from "../components/core/Course/CourseAccordionBar"
 import CourseDetailsCard from "../components/core/Course/CourseDetailsCard"
 import { formatDate } from "../services/formatDate"
-import { fetchCourseDetails } from "../services/operations/courseDetailsApi"
+// import { fetchCourseDetails } from "../services/operations/courseDetailsApi"
+import { useCourseDetails } from "../hooks/useCourseDetails"
 import { BuyCourse } from "../services/operations/studentFeaturesApi"
 import GetAvgRating from "../utils/avgRating"
-import Error from "./Error"
 
 
 function CourseDetails  ()  {
@@ -30,29 +30,13 @@ function CourseDetails  ()  {
   const { courseId } = useParams()
   // console.log(`course id: ${courseId}`)
 
-  // Declear a state to save the course details
-  const [response, setResponse] = useState(null)
+  const { data: response, isLoading, isError, error, refetch } = useCourseDetails(courseId)
+
   const [confirmationModal, setConfirmationModal] = useState(null)
-  useEffect(() => {
-    // Calling fetchCourseDetails fucntion to fetch the details
-    ;(async () => {
-      try {
-        const res = await fetchCourseDetails(courseId)
-
-         console.log(" particualr course details res at courseDetail page.jsx : ", res)
-        setResponse(res)
-      } catch (error) {
-        console.log("Could not fetch Course Details")
-      }
-    })()
-  }, [courseId])
-
-  // console.log("response: ", response)
 
   // Calculating Avg Review count
   const [avgReviewCount, setAvgReviewCount] = useState(0)
   useEffect(() => {
-   
     const count = GetAvgRating(response?.data?.courseDetails?.ratingAndReviews)
     setAvgReviewCount(count)
   }, [response])
@@ -80,25 +64,44 @@ function CourseDetails  ()  {
     setTotalNoOfLectures(lectures)
   }, [response])
 
-  if (loading || !response) {
+  if (isLoading || loading) {
     return (
-      <div className="grid min-h-[calc(100vh-3.5rem)] place-items-center">
-        <div className="spinner"></div>
+      <div className="flex flex-col gap-y-4 p-8 w-11/12 max-w-maxContent mx-auto mt-10 min-h-[calc(100vh-3.5rem)] animate-pulse">
+        <div className="h-64 w-full bg-richblack-700/50 rounded-xl"></div>
+        <div className="h-10 w-1/3 bg-richblack-700/50 rounded-lg mt-8"></div>
+        <div className="h-8 w-1/4 bg-richblack-700/50 rounded-lg"></div>
+        <div className="h-40 w-full bg-richblack-700/50 rounded-xl mt-4"></div>
       </div>
     )
   }
-  if (!response.success) {
-    return <Error />
+
+  if (isError || (response && !response?.success)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] text-richblack-5 gap-4">
+        <h2 className="text-2xl text-pink-200">Failed to load course details</h2>
+        <p className="text-richblack-200">{error?.message || response?.message || "Course not found."}</p>
+        <button onClick={() => refetch()} className="bg-yellow-50 px-4 py-2 font-semibold text-richblack-900 rounded-md">
+          Retry
+        </button>
+      </div>
+    )
   }
 
-  //  const courseDetails = response.data?.data;
- 
-  // if (!courseDetails) {
-  //   return  <Error/>
-  // }
+  const courseDetails = response?.data?.courseDetails;
+  
+  if (!courseDetails) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-3.5rem)] gap-4 text-richblack-5">
+        <h2 className="text-2xl font-bold">Course Details Empty</h2>
+        <p className="text-richblack-200">This course do not contain details or the data is missing.</p>
+        <button onClick={() => navigate('/catalog')} className="bg-yellow-50 px-4 py-2 font-semibold text-richblack-900 rounded-md">
+          Browse Catalog
+        </button>
+      </div>
+    );
+  }
 
   const {
-    _id: course_id,
     courseName,
     courseDescription,
     thumbnail,

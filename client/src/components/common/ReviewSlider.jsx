@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react"
 import ReactStars from "react-rating-stars-component"
 // Import Swiper React components
 import { Swiper, SwiperSlide } from "swiper/react"
-import { Pagination,FreeMode,Autoplay } from 'swiper/modules'
+import { Pagination,FreeMode,Autoplay } from 'swiper'
 
 //Import Swiper styles
 import "swiper/css"
@@ -21,6 +21,8 @@ import { ratingsEndpoints } from "../../services/apis"
 function ReviewSlider() {
   const [reviews, setReviews] = useState([])
   const truncateWords = 15
+  const reviewItems = Array.isArray(reviews) ? reviews : []
+  const canLoop = reviewItems.length > 4
 
   useEffect(() => {
     ;(async () => {
@@ -29,12 +31,10 @@ function ReviewSlider() {
         ratingsEndpoints.REVIEWS_DETAILS_API
       )
       if (data?.success) {
-        setReviews(data?.data)
+        setReviews(Array.isArray(data?.data) ? data.data : [])
       }
     })()
   }, [])
-
-   console.log("reviews" , reviews)
 
   return (
     <div className="text-white">
@@ -42,7 +42,7 @@ function ReviewSlider() {
         <Swiper
           slidesPerView={4}
           spaceBetween={25}
-          loop={true}
+          loop={canLoop}
           freeMode={true}
           autoplay={{
             delay: 2500,
@@ -52,7 +52,7 @@ function ReviewSlider() {
           modules={[FreeMode, Pagination, Autoplay]}
           className="w-full "
         >
- {reviews.map((review, i) => {
+       {reviewItems.map((review, i) => {
   return (
     <SwiperSlide key={i}>
       <div className="flex flex-col gap-3 bg-richblack-800 p-3 text-[14px] text-richblack-25">
@@ -76,9 +76,9 @@ function ReviewSlider() {
           </div>
         </div>
         <p className="font-medium text-richblack-25">
-          {review?.review.split(" ").length > truncateWords
-            ? `${review.review.split(" ").slice(0, truncateWords).join(" ")} ...`
-            : `${review.review}`}
+          {String(review?.review || "").split(" ").length > truncateWords
+            ? `${String(review?.review || "").split(" ").slice(0, truncateWords).join(" ")} ...`
+            : `${String(review?.review || "")}`}
         </p>
         <div className="flex items-center gap-2 ">
           <h3 className="font-semibold text-yellow-100">

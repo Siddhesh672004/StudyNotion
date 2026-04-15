@@ -2,6 +2,17 @@
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    extend: {
+      colors: {
+        brand: {
+          yellow: '#FFD60A',
+          dark: '#0F0F0F',
+          card: '#161D29',
+          surface: '#2C333F',
+          border: '#374151'
+        }
+      }
+    },
     fontFamily: {
       inter: ["Inter", "sans-serif"],
       "edu-sa": ["Edu SA Beginner", "cursive"],
