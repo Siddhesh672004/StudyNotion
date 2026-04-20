@@ -10,7 +10,8 @@ import {
   setCourseSectionData,
   setEntireCourseData,
   setTotalNoOfLectures,
-} from "../slices/viewCourseSlice"
+  resetViewCourse,
+} from "../store/slices/viewCourseSlice"
 
  function ViewCourse() {
   const { courseId } = useParams()
@@ -56,6 +57,10 @@ useEffect(() => {
     };
 
     fetchCourseData();
+
+    return () => {
+      dispatch(resetViewCourse());
+    };
   }, [courseId, token, dispatch]);
 
   return (

@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom"
 import {
   getFullDetailsOfCourse,
 } from "../../../../services/operations/courseDetailsApi"
-import { setCourse, setEditCourse } from "../../../../slices/courseSlice"
+import { setCourse, setEditCourse } from "../../../../store/slices/courseSlice"
 import RenderSteps from "../AddCourse/RenderSteps"
 
 export default function EditCourse() {

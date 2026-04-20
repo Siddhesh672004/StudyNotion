@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 
 import { editCourseDetails } from "../../../../../services/operations/courseDetailsApi"
-import { resetCourseState, setStep } from "../../../../../slices/courseSlice"
+import { resetCourseState, setStep } from "../../../../../store/slices/courseSlice"
 import { COURSE_STATUS } from "../../../../../utils/constants"
 import IconBtn from "../../../../common/IconBtn"
 
