@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { toast } from "react-hot-toast"
 import { useDispatch, useSelector } from "react-redux"
 import { useParams } from "react-router-dom"
 
@@ -16,17 +17,33 @@ export default function EditCourse() {
   const { token } = useSelector((state) => state.auth)
 
   useEffect(() => {
+    if (!courseId || !token) {
+      return
+    }
+
     ;(async () => {
       setLoading(true)
+      dispatch(setEditCourse(false))
+      dispatch(setCourse(null))
+
       const result = await getFullDetailsOfCourse(courseId, token)
-      if (result?.courseDetails) {
+      const courseDetails =
+        result?.courseDetails ||
+        result?.data?.courseDetails ||
+        result?.course ||
+        result?.data?.course ||
+        null
+
+      if (courseDetails) {
         dispatch(setEditCourse(true))
-        dispatch(setCourse(result?.courseDetails))
+        dispatch(setCourse(courseDetails))
+      } else if (result?.message) {
+        toast.error(result.message)
       }
+
       setLoading(false)
     })()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [courseId, dispatch, token])
 
   if (loading) {
     return (

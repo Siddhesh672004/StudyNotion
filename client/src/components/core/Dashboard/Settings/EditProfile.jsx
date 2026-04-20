@@ -183,6 +183,7 @@ export default function EditProfile() {
 
         <div className="flex justify-end gap-2">
           <button
+            type="button"
             onClick={() => {
               navigate("/dashboard/my-profile")
             }}

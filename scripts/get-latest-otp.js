@@ -1,6 +1,6 @@
 require("dotenv").config({ path: "./server/.env", quiet: true });
 const mongoose = require("../server/node_modules/mongoose");
-const OTP = require("../server/models/OTP");
+const OTP = require("../server/src/models/OTP");
 
 (async () => {
   try {

@@ -25,6 +25,7 @@ exports.createSection = async (req, res) => {
                                             {
                                                 $push: {
                                                     courseContent: newSection._id,
+                                                    sections: newSection._id,
                                                 }
                                             },
                                             {new: true},
@@ -56,7 +57,7 @@ exports.createSection = async (req, res) => {
 exports.updateSection = async (req, res) => {
     try {
         //data input
-        const {sectionName, sectionId} = req.body;
+        const {sectionName, sectionId, courseId} = req.body;
 
         //data validation
         if(!sectionName || !sectionId) {
@@ -68,11 +69,30 @@ exports.updateSection = async (req, res) => {
 
         //update data
         const section = await Section.findByIdAndUpdate(sectionId, {sectionName}, {new:true});
+        if (!section) {
+            return res.status(404).json({
+                success: false,
+                message: "Section not found",
+            });
+        }
+
+        let updatedCourseDetails = null;
+        if (courseId) {
+            updatedCourseDetails = await Course.findById(courseId)
+                .populate({
+                    path: "courseContent",
+                    populate: {
+                        path: "subSection",
+                    },
+                })
+                .exec();
+        }
 
         //return res
         return res.status(200).json({
-        success:true,
-        message:'Section Updated Successfully',
+            success:true,
+            message:'Section Updated Successfully',
+            updatedCourseDetails,
         });
 
     }
@@ -90,7 +110,8 @@ exports.deleteSection = async (req, res) => {
         const { sectionId, courseId } = req.body
         await Course.findByIdAndUpdate(courseId, {
             $pull: {
-            courseContent: sectionId,
+                courseContent: sectionId,
+                sections: sectionId,
             },
         })
         const section = await Section.findById(sectionId)

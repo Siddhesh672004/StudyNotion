@@ -13,7 +13,7 @@ const {
 } = settingsEndpoints
 
 export function updateDisplayPicture(token, formData) {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     const toastId = toast.loading("Loading...")
     try {
       const response = await apiConnector(
@@ -33,11 +33,19 @@ export function updateDisplayPicture(token, formData) {
       if (!response.data.success) {
         throw new Error(response.data.message)
       }
+      const existingUser = getState()?.profile?.user || {}
+      const updatedUser = {
+        ...existingUser,
+        ...response.data.data,
+        additionalDetails:
+          response.data.data?.additionalDetails || existingUser.additionalDetails,
+      }
       toast.success("Display Picture Updated Successfully")
-      dispatch(setUser(response.data.data))
+      dispatch(setUser(updatedUser))
+      localStorage.setItem("user", JSON.stringify(updatedUser))
     } catch (error) {
       console.log("UPDATE_DISPLAY_PICTURE_API API ERROR............", error)
-      toast.error("Could Not Update Display Picture")
+      toast.error(error?.response?.data?.message || error.message || "Could Not Update Display Picture")
     }
     toast.dismiss(toastId)
   }
@@ -62,10 +70,14 @@ export function updateProfile(token, formData) {
       dispatch(
         setUser({ ...updatedUserDetails, image: userImage })
       )
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...updatedUserDetails, image: userImage })
+      )
       toast.success("Profile Updated Successfully")
     } catch (error) {
       console.log("UPDATE_PROFILE_API API ERROR............", error)
-      toast.error("Could Not Update Profile")
+      toast.error(error?.response?.data?.message || error.message || "Could Not Update Profile")
     }
     toast.dismiss(toastId)
   }
@@ -85,7 +97,7 @@ export async function changePassword(token, formData) {
     toast.success("Password Changed Successfully")
   } catch (error) {
     console.log("CHANGE_PASSWORD_API API ERROR............", error)
-    toast.error(error.response.data.message)
+    toast.error(error?.response?.data?.message || error.message || "Could not change password")
   }
   toast.dismiss(toastId)
 }
@@ -106,7 +118,7 @@ export function deleteProfile(token, navigate) {
       dispatch(logout(navigate))
     } catch (error) {
       console.log("DELETE_PROFILE_API API ERROR............", error)
-      toast.error("Could Not Delete Profile")
+      toast.error(error?.response?.data?.message || error.message || "Could Not Delete Profile")
     }
     toast.dismiss(toastId)
   }

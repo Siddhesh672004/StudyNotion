@@ -95,6 +95,7 @@ export default function UpdatePassword() {
         </div>
         <div className="flex justify-end gap-2">
           <button
+            type="button"
             onClick={() => {
               navigate("/dashboard/my-profile")
             }}

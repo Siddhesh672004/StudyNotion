@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react"
+import { toast } from "react-hot-toast"
 import { FiUpload } from "react-icons/fi"
 import { useDispatch, useSelector } from "react-redux"
 
@@ -37,18 +38,23 @@ export default function ChangeProfilePicture() {
     }
   }
 
-  const handleFileUpload = () => {
+  const handleFileUpload = async () => {
+    if (!imageFile) {
+      toast.error("Please select an image first")
+      return
+    }
+
     try {
       console.log("uploading...")
       setLoading(true)
       const formData = new FormData()
       formData.append("displayPicture", imageFile)
       // console.log("formdata", formData)
-      dispatch(updateDisplayPicture(token, formData)).then(() => {
-        setLoading(false)
-      })
+      await dispatch(updateDisplayPicture(token, formData))
     } catch (error) {
       console.log("ERROR MESSAGE - ", error.message)
+    } finally {
+      setLoading(false)
     }
   }
 

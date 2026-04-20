@@ -1,6 +1,16 @@
+import { useEffect } from "react"
+import { useDispatch } from "react-redux"
+
+import { resetCourseState } from "../../../../slices/courseSlice"
 import RenderSteps from "./RenderSteps"
 
 export default function AddCourse() {
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    dispatch(resetCourseState())
+  }, [dispatch])
+
   return (
     <>
       <div className="flex w-full items-start gap-x-6">

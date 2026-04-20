@@ -4,10 +4,7 @@ import ReactStars from "react-rating-stars-component"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Pagination,FreeMode,Autoplay } from 'swiper/modules'
 
-//Import Swiper styles
-import "swiper/css"
-import "swiper/css/free-mode"
-import "swiper/css/pagination"
+// Swiper package CSS is omitted because v12 ships nested CSS that triggers CRA build warnings.
 
 // Icons
 import { FaStar } from "react-icons/fa"
@@ -21,6 +18,7 @@ import { ratingsEndpoints } from "../../services/apis"
 function ReviewSlider() {
   const [reviews, setReviews] = useState([])
   const truncateWords = 15
+  const loopEnabled = reviews.length > 4
 
   useEffect(() => {
     ;(async () => {
@@ -34,27 +32,30 @@ function ReviewSlider() {
     })()
   }, [])
 
-   console.log("reviews" , reviews)
-
   return (
     <div className="text-white">
       <div className="my-[50px] h-[184px] max-w-maxContentTab lg:max-w-maxContent">
+        {reviews.length === 0 ? (
+          <div className="grid h-full place-items-center rounded-md bg-richblack-800 text-richblack-300">
+            No reviews available yet.
+          </div>
+        ) : (
         <Swiper
           slidesPerView={4}
           spaceBetween={25}
-          loop={true}
+          loop={loopEnabled}
           freeMode={true}
-          autoplay={{
+          autoplay={loopEnabled ? {
             delay: 2500,
             disableOnInteraction: false,
-          }}
+          } : false}
        
           modules={[FreeMode, Pagination, Autoplay]}
           className="w-full "
         >
  {reviews.map((review, i) => {
   return (
-    <SwiperSlide key={i}>
+    <SwiperSlide key={review?._id || `${review?.user?._id || "review"}-${i}`}>
       <div className="flex flex-col gap-3 bg-richblack-800 p-3 text-[14px] text-richblack-25">
         <div className="flex items-center gap-4">
           <img
@@ -82,11 +83,11 @@ function ReviewSlider() {
         </p>
         <div className="flex items-center gap-2 ">
           <h3 className="font-semibold text-yellow-100">
-            {review.rating.toFixed(1)}
+            {Number(review.rating || 0).toFixed(1)}
           </h3>
           <ReactStars
             count={5}
-            value={review.rating}
+            value={Number(review.rating || 0)}
             size={20}
             edit={false}
             activeColor="#ffd700"
@@ -101,6 +102,7 @@ function ReviewSlider() {
 
           {/* <SwiperSlide>Slide 1</SwiperSlide> */}
         </Swiper>
+        )}
       </div>
     </div>
   )

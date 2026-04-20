@@ -2,6 +2,7 @@ import { toast } from "react-hot-toast"
 
 import { setLoading, setToken } from "../../slices/authSlice"
 import { resetCart } from "../../slices/cartSlice"
+import { resetCourseState } from "../../slices/courseSlice"
 import { setUser } from "../../slices/profileSlice"
 import { apiConnector } from "../apiconnector"
 import { endpoints } from "../apis"
@@ -128,19 +129,26 @@ export function login(email, password, navigate) {
       }
 
       toast.success("Login Successful")
-      console.log(response.data.token)
-      dispatch(setToken(response.data.token))
-      const userImage = response.data?.user?.image
-        ? response.data.user.image
-        : `https://api.dicebear.com/5.x/initials/svg?seed=${response.data.user.firstName} ${response.data.user.lastName}`
-      dispatch(setUser({ ...response.data.user, image: userImage }))
-      
-      localStorage.setItem("token", response.data.token)
-      localStorage.setItem("user", JSON.stringify(response.data.user))
+      const token = response?.data?.data?.token
+      const user = response?.data?.data?.user
+
+      if (!token || !user) {
+        throw new Error("Invalid login response from server")
+      }
+
+      dispatch(setToken(token))
+      const userImage = user?.image
+        ? user.image
+        : `https://api.dicebear.com/5.x/initials/svg?seed=${user.firstName} ${user.lastName}`
+      const normalizedUser = { ...user, image: userImage }
+
+      dispatch(setUser(normalizedUser))
+      localStorage.setItem("token", token)
+      localStorage.setItem("user", JSON.stringify(normalizedUser))
       navigate("/dashboard/my-profile")
     } catch (error) {
       console.log("LOGIN API ERROR............", error)
-      toast.error("Login Failed")
+      toast.error(error?.response?.data?.message || error.message || "Login Failed")
     }
     dispatch(setLoading(false))
     toast.dismiss(toastId)
@@ -152,6 +160,7 @@ export function logout(navigate) {
     dispatch(setToken(null))
     dispatch(setUser(null))
     dispatch(resetCart())
+    dispatch(resetCourseState())
     localStorage.removeItem("token")
     localStorage.removeItem("user")
     toast.success("Logged Out")

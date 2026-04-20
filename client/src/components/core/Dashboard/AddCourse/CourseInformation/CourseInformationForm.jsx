@@ -32,6 +32,24 @@ export default function CourseInformationForm() {
   const [loading, setLoading] = useState(false)
   const [courseCategories, setCourseCategories] = useState([])
 
+  const normalizePrice = (value) => {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const getNormalizedToken = () => {
+    if (typeof token !== "string") {
+      return null
+    }
+
+    const normalized = token
+      .replace(/^"+|"+$/g, "")
+      .replace(/^Bearer\s+/i, "")
+      .trim()
+
+    return normalized || null
+  }
+
   useEffect(() => {
     const getCategories = async () => {
       setLoading(true)
@@ -47,11 +65,11 @@ export default function CourseInformationForm() {
       // console.log("data populated", editCourse)
       setValue("courseTitle", course?.courseName)
       setValue("courseShortDesc", course?.courseDescription)
-      setValue("coursePrice", course?.price)
-      setValue("courseTags", course?.tag)
+      setValue("coursePrice", course?.price ?? "")
+      setValue("courseTags", course?.tag || [])
       setValue("courseBenefits", course?.whatYouWillLearn)
-      setValue("courseCategory", course?.category)
-      setValue("courseRequirements", course?.instructions)
+      setValue("courseCategory", course?.category?._id || course?.category || "")
+      setValue("courseRequirements", course?.instructions || [])
       setValue("courseImage", course?.thumbnail)
     }
     getCategories()
@@ -69,17 +87,28 @@ export default function CourseInformationForm() {
 
   const isFormUpdated = () => {
     const currentValues = getValues()
+    const existingCategoryId = course?.category?._id || course?.category || ""
+    const currentCategoryId = currentValues.courseCategory || ""
+    const currentPrice = normalizePrice(currentValues.coursePrice)
+    const existingPrice = normalizePrice(course?.price)
+    const currentTags = currentValues.courseTags || []
+    const existingTags = course?.tag || []
+    const currentRequirements = currentValues.courseRequirements || []
+    const existingRequirements = course?.instructions || []
+    const imageChanged =
+      currentValues.courseImage instanceof File ||
+      (currentValues.courseImage && currentValues.courseImage !== course?.thumbnail)
+
     // console.log("changes after editing form values:", currentValues)
     if (
       currentValues.courseTitle !== course?.courseName ||
       currentValues.courseShortDesc !== course?.courseDescription ||
-      currentValues.coursePrice !== course?.price ||
-      currentValues.courseTags.toString() !== course?.tag.toString() ||
+      currentPrice !== existingPrice ||
+      currentTags.toString() !== existingTags.toString() ||
       currentValues.courseBenefits !== course?.whatYouWillLearn ||
-      currentValues.courseCategory._id !== course?.category?._id ||
-      currentValues.courseRequirements.toString() !==
-        course?.instructions.toString() ||
-      currentValues.courseImage !== course?.thumbnail
+      currentCategoryId !== existingCategoryId ||
+      currentRequirements.toString() !== existingRequirements.toString() ||
+      imageChanged
     ) {
       return true
     }
@@ -106,34 +135,39 @@ export default function CourseInformationForm() {
         if (currentValues.courseShortDesc !== course?.courseDescription) {
           formData.append("courseDescription", data.courseShortDesc)
         }
-        if (currentValues.coursePrice !== course?.price) {
-          formData.append("price", data.coursePrice)
+        if (normalizePrice(currentValues.coursePrice) !== normalizePrice(course?.price)) {
+          formData.append("price", String(normalizePrice(data.coursePrice)))
         }
-        if (currentValues.courseTags.toString() !== course?.tag.toString()) {
+        if ((currentValues.courseTags || []).toString() !== (course?.tag || []).toString()) {
           formData.append("tag", JSON.stringify(data.courseTags))
         }
         if (currentValues.courseBenefits !== course?.whatYouWillLearn) {
           formData.append("whatYouWillLearn", data.courseBenefits)
         }
-        if (currentValues.courseCategory._id !== course?.category?._id) {
+        if ((currentValues.courseCategory || "") !== (course?.category?._id || course?.category || "")) {
           formData.append("category", data.courseCategory)
         }
         if (
-          currentValues.courseRequirements.toString() !==
-          course?.instructions.toString()
+          (currentValues.courseRequirements || []).toString() !==
+          (course?.instructions || []).toString()
         ) {
           formData.append(
             "instructions",
             JSON.stringify(data.courseRequirements)
           )
         }
-        if (currentValues.courseImage !== course?.thumbnail) {
+        if (currentValues.courseImage instanceof File) {
           formData.append("thumbnailImage", data.courseImage)
         }
-        // console.log("Edit Form data: ", formData)
+
+        const normalizedToken = getNormalizedToken()
+        if (!normalizedToken) {
+          toast.error("Session expired. Please log in again.")
+          return
+        }
+
         setLoading(true)
-        console.log("theTokenHere", token)
-        const result = await editCourseDetails(formData, token)
+        const result = await editCourseDetails(formData, normalizedToken)
         
 
         setLoading(false)
@@ -147,30 +181,31 @@ export default function CourseInformationForm() {
       return
     }
 
+    const normalizedPrice = normalizePrice(data.coursePrice)
+    if (normalizedPrice === null) {
+      toast.error("Course Price is required")
+      return
+    }
+
     const formData = new FormData()
-    formData.append("courseId", data._id)
     formData.append("courseName", data.courseTitle)
     formData.append("courseDescription", data.courseShortDesc)
-    formData.append("price", data.coursePrice)
+    formData.append("price", String(normalizedPrice))
     formData.append("tag", JSON.stringify(data.courseTags))
     formData.append("whatYouWillLearn", data.courseBenefits)
     formData.append("category", data.courseCategory)
     formData.append("status", COURSE_STATUS.DRAFT)
     formData.append("instructions", JSON.stringify(data.courseRequirements))
     formData.append("thumbnailImage", data.courseImage)
+
+    const normalizedToken = getNormalizedToken()
+    if (!normalizedToken) {
+      toast.error("Session expired. Please log in again.")
+      return
+    }
+
     setLoading(true)
-
-    if(formData)
-    {
-      console.log("form data mil raha hai:" , token ,);
-    }
-    else 
-    {
-      console.log("form data is not found")
-    }
-
-    console.log("theTokenHere", token)
-    const result = await addCourseDetails(formData, token)
+    const result = await addCourseDetails(formData, normalizedToken)
   
     if (result) {
       dispatch(setStep(2))
@@ -229,7 +264,6 @@ export default function CourseInformationForm() {
             placeholder="Enter Course Price"
             {...register("coursePrice", {
               required: true,
-              valueAsNumber: true,
               pattern: {
                 value: /^(0|[1-9]\d*)(\.\d+)?$/,
               },

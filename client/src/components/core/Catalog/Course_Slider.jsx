@@ -3,19 +3,16 @@ import React from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import {  Pagination,FreeMode } from 'swiper/modules'
 
-//Import Swiper styles
-import "swiper/css"
-import "swiper/css/free-mode"
-import "swiper/css/pagination"
+// Swiper package CSS is omitted because v12 ships nested CSS that triggers CRA build warnings.
 // import "../../.."
 // Import required modules
 //import { FreeMode, Pagination } from "swiper"
 
 // import { getAllCourses } from "../../services/operations/courseDetailsAPI"
 //import Course_Card from "./Course_Card"
-import Course_Card from "./Course_card"
+import CourseCard from "./Course_card"
 
-function Course_Slider({ Courses }) {
+function CourseSlider({ Courses }) {
   return (
     <>
       {Courses?.length ? (
@@ -34,7 +31,7 @@ function Course_Slider({ Courses }) {
         >
           {Courses?.map((course, i) => (
             <SwiperSlide key={i}>
-              <Course_Card course={course} Height={"h-[250px]"} />
+              <CourseCard course={course} Height={"h-[250px]"} />
             </SwiperSlide>
           ))}
         </Swiper>
@@ -45,7 +42,7 @@ function Course_Slider({ Courses }) {
   )
 }
 
-export default Course_Slider
+export default CourseSlider
 
 // import React from "react";
 // import { Swiper, SwiperSlide } from "swiper/react";

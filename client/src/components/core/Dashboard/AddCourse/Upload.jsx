@@ -53,12 +53,14 @@ export default function Upload({
   }
 
   useEffect(() => {
-    register(name, { required: true })
+    register(name, { required: !(viewData || editData) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [register])
 
   useEffect(() => {
-    setValue(name, selectedFile)
+    if (selectedFile) {
+      setValue(name, selectedFile)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFile, setValue])
 

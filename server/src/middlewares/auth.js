@@ -2,14 +2,45 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const User = require("../models/User");
 
+const normalizeToken = (value) => {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    let token = value.trim();
+    if (!token) {
+        return null;
+    }
+
+    // Trim wrapping quotes and duplicated Bearer prefixes from legacy/stale client storage formats.
+    token = token.replace(/^['"]+|['"]+$/g, "");
+    while (/^Bearer\s+/i.test(token)) {
+        token = token.replace(/^Bearer\s+/i, "").trim();
+    }
+    token = token.replace(/^['"]+|['"]+$/g, "");
+
+    if (!token || token === "undefined" || token === "null") {
+        return null;
+    }
+
+    return token;
+};
+
 //auth handler
 exports.auth = async (req, res, next) => {
     try{
-        //extract token from ....
-        // Now extract the token and after extracting it from the header, remove the "Bearer " part and all the '"' from the token(all)
-        const token = req?.cookies?.token
-                        || req?.body?.token
-                        || req?.header("Authorization")?.replace("Bearer ", "").trim().replace("\"", "");
+        // Prefer Authorization header so stale cookies do not override fresh bearer tokens.
+        const authHeader = req?.header("Authorization") || req?.header("authorization");
+        const tokenCandidates = [authHeader, req?.body?.token, req?.cookies?.token];
+        let token = null;
+
+        for (const candidate of tokenCandidates) {
+            const normalized = normalizeToken(candidate);
+            if (normalized) {
+                token = normalized;
+                break;
+            }
+        }
         
         //if token is missing, then return response 
         if(!token) {
