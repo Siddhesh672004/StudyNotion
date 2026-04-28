@@ -1,6 +1,7 @@
 jest.mock("../../server/src/services/paymentService", () => ({
   createRazorpayOrder: jest.fn(),
   verifyRazorpaySignature: jest.fn(),
+  validateVerifiedPayment: jest.fn(),
   enrollStudentsInCourses: jest.fn(),
   sendPaymentSuccessMail: jest.fn(),
 }));
@@ -109,10 +110,17 @@ describe("Payments controller", () => {
     const next = jest.fn();
 
     paymentService.verifyRazorpaySignature.mockReturnValue(true);
+    paymentService.validateVerifiedPayment.mockResolvedValue(["course-1"]);
     paymentService.enrollStudentsInCourses.mockResolvedValue();
 
     await verifySignature(req, res, next);
 
+    expect(paymentService.validateVerifiedPayment).toHaveBeenCalledWith({
+      razorpay_order_id: "order_123",
+      razorpay_payment_id: "payment_123",
+      courses: ["course-1"],
+      userId: "student-1",
+    });
     expect(paymentService.enrollStudentsInCourses).toHaveBeenCalledWith({
       courses: ["course-1"],
       userId: "student-1",

@@ -1,6 +1,5 @@
 import { toast } from "react-hot-toast"
 
-import rzpLogo from "../../assets/Logo/rzp_logo.png"
 import { resetCart } from "../../store/slices/cartSlice"
 import { setPaymentLoading } from "../../store/slices/courseSlice"
 import { apiConnector } from "../apiconnector"
@@ -11,6 +10,29 @@ const {
   COURSE_VERIFY_API,
   SEND_PAYMENT_SUCCESS_EMAIL_API,
 } = studentEndpoints
+
+const normalizeToken = (rawToken) => {
+  if (!rawToken || typeof rawToken !== "string") return null
+
+  let token = rawToken.trim().replace(/^['"]+|['"]+$/g, "")
+  while (/^Bearer\s+/i.test(token)) {
+    token = token.replace(/^Bearer\s+/i, "").trim()
+  }
+  token = token.replace(/^['"]+|['"]+$/g, "")
+
+  if (!token || token === "undefined" || token === "null") return null
+  return token
+}
+
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]))
+    if (!payload?.exp) return false
+    return Date.now() >= payload.exp * 1000
+  } catch (_) {
+    return true
+  }
+}
 
 // Load the Razorpay SDK from the CDN
 function loadScript(src) {
@@ -37,6 +59,27 @@ export async function BuyCourse(
 ) {
   const toastId = toast.loading("Loading...")
   try {
+    const normalizedToken = normalizeToken(token)
+
+    if (!normalizedToken) {
+      toast.error("Please login to continue with payment.")
+      navigate("/login")
+      return
+    }
+
+    if (isTokenExpired(normalizedToken)) {
+      localStorage.removeItem("token")
+      localStorage.removeItem("user")
+      toast.error("Your session expired. Please login again.")
+      navigate("/login")
+      return
+    }
+
+    if (!Array.isArray(courses) || courses.length === 0) {
+      toast.error("Please select at least one course to buy.")
+      return
+    }
+
     // Loading the script of Razorpay SDK
     const res = await loadScript("https://checkout.razorpay.com/v1/checkout.js")
 
@@ -55,7 +98,7 @@ export async function BuyCourse(
         courses,
       },
       {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${normalizedToken}`,
       }
     )
 
@@ -64,22 +107,34 @@ export async function BuyCourse(
     }
     console.log("PAYMENT RESPONSE FROM BACKEND............", orderResponse.data)
 
+    const razorpayKey = process.env.REACT_APP_RAZORPAY_KEY
+    if (!razorpayKey) {
+      toast.error("Razorpay key is missing. Please configure REACT_APP_RAZORPAY_KEY.")
+      return
+    }
+
+    const configuredLogo = process.env.REACT_APP_RAZORPAY_LOGO_URL
+    const checkoutLogo =
+      configuredLogo && /^https:\/\//i.test(configuredLogo)
+        ? configuredLogo
+        : undefined
+
     // Opening the Razorpay SDK
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY,
+      key: razorpayKey,
       currency: orderResponse.data.data.currency,
       amount: `${orderResponse.data.data.amount}`,
       order_id: orderResponse.data.data.id,
       name: "StudyNotion",
       description: "Thank you for Purchasing the Course.",
-      image: rzpLogo,
+      ...(checkoutLogo ? { image: checkoutLogo } : {}),
       prefill: {
-        name: `${user_details.firstName} ${user_details.lastName}`,
-        email: user_details.email,
+        name: `${user_details?.firstName || ""} ${user_details?.lastName || ""}`.trim(),
+        email: user_details?.email || "",
       },
       handler: function (response) {
-        sendPaymentSuccessEmail(response, orderResponse.data.data.amount, token)
-        verifyPayment({ ...response, courses }, token, navigate, dispatch)
+        sendPaymentSuccessEmail(response, orderResponse.data.data.amount, normalizedToken)
+        verifyPayment({ ...response, courses }, normalizedToken, navigate, dispatch)
       },
     }
     const paymentObject = new window.Razorpay(options)
@@ -91,7 +146,7 @@ export async function BuyCourse(
     })
   } catch (error) {
     console.log("PAYMENT API ERROR............", error)
-    toast.error("Could Not make Payment.")
+    toast.error(error?.response?.data?.message || "Could not make payment.")
   }
   toast.dismiss(toastId)
 }
@@ -112,12 +167,12 @@ async function verifyPayment(bodyData, token, navigate, dispatch) {
     }
 
     toast.success("Payment Successful. You are Added to the course ")
-    // after verfying payment students enrolled into course this logic return in payment cobtroller 
-    navigate("/dashboard/enrolled-courses")
+    // Navigate to enrolled courses after verification. The list will be refetched there.
+    navigate("/dashboard/enrolled-courses", { replace: true })
     dispatch(resetCart())
   } catch (error) {
     console.log("PAYMENT VERIFY ERROR............", error)
-    toast.error("Could Not Verify Payment.")
+    toast.error(error?.response?.data?.message || "Could not verify payment.")
   }
   toast.dismiss(toastId)
   dispatch(setPaymentLoading(false))

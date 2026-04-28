@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { useDispatch } from "react-redux"
 
-import { resetCourseState } from "../../../../slices/courseSlice"
+import { resetCourseState } from "../../../../store/slices/courseSlice"
 import RenderSteps from "./RenderSteps"
 
 export default function AddCourse() {

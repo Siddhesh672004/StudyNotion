@@ -58,7 +58,7 @@ export const fetchCourseDetails = async (courseId) => {
     // Normalize old/new backend shapes during contract migration.
     const payload = response.data
     if (payload?.data?.course && !payload?.data?.courseDetails) {
-      payload.data.courseDetails = payload.data.data.course
+      payload.data.courseDetails = payload.data.course
     }
 
     result = payload
@@ -344,7 +344,11 @@ export const getFullDetailsOfCourse = async (courseId, token) => {
   
   } catch (error) {
     console.log("COURSE_FULL_DETAILS_API API ERROR............", error)
-    result = error.response.data
+    result = error?.response?.data || {
+      success: false,
+      message: "Could not fetch course details",
+      data: null,
+    }
     // toast.error(error.response.data.message);
   }
   toast.dismiss(toastId)

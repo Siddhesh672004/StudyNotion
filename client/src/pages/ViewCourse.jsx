@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
+import { toast } from "react-hot-toast"
 import { useDispatch, useSelector } from "react-redux"
 import { Outlet, useParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 import CourseReviewModal from "../components/core/ViewCourse/CourseReviewModal"
 import VideoDetailsSidebar from "../components/core/ViewCourse/VideoDetailsSlidebar"
@@ -17,6 +19,7 @@ import {
   const { courseId } = useParams()
   const { token } = useSelector((state) => state.auth)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [reviewModal, setReviewModal] = useState(false)
 
 //   useEffect(() => {
@@ -42,6 +45,13 @@ useEffect(() => {
     const fetchCourseData = async () => {
       try {
         const courseData = await getFullDetailsOfCourse(courseId, token);
+
+        if (!courseData?.courseDetails) {
+          toast.error(courseData?.message || "Please enroll in this course first")
+          navigate("/dashboard/enrolled-courses")
+          return
+        }
+
         dispatch(setCourseSectionData(courseData.courseDetails.courseContent));
         dispatch(setEntireCourseData(courseData.courseDetails));
         dispatch(setCompletedLectures(courseData.completedVideos));
@@ -53,6 +63,8 @@ useEffect(() => {
         dispatch(setTotalNoOfLectures(lectures));
       } catch (error) {
         console.error("Error fetching course data:", error);
+        toast.error("Unable to load this course")
+        navigate("/dashboard/enrolled-courses")
       }
     };
 
@@ -61,7 +73,7 @@ useEffect(() => {
     return () => {
       dispatch(resetViewCourse());
     };
-  }, [courseId, token, dispatch]);
+  }, [courseId, token, dispatch, navigate]);
 
   return (
     <>

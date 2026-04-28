@@ -2,8 +2,23 @@ const request = require("supertest");
 const jwt = require("jsonwebtoken");
 
 const app = require("../../server/src/app");
+const Course = require("../../server/src/models/Course");
 const SubSection = require("../../server/src/models/SubSection");
 const CourseProgress = require("../../server/src/models/CourseProgress");
+
+const createCourseChain = (result) => {
+	const chain = {
+		select() {
+			return chain;
+		},
+		populate() {
+			return chain;
+		},
+		lean: async () => result,
+	};
+
+	return chain;
+};
 
 const createStudentToken = () =>
 	jwt.sign(
@@ -18,6 +33,13 @@ describe("Course progress API contracts", () => {
 			save: jest.fn(async () => {}),
 		};
 
+		jest.spyOn(Course, "findById").mockImplementation(() =>
+			createCourseChain({
+				_id: "course-1",
+				studentsEnrolled: ["student-1"],
+				courseContent: [{ _id: "section-1", subSection: ["sub-1"] }],
+			})
+		);
 		jest.spyOn(SubSection, "findById").mockImplementation(async (id) => ({ _id: id }));
 		jest.spyOn(CourseProgress, "findOne").mockResolvedValue(progressDoc);
 		jest.spyOn(CourseProgress, "create").mockResolvedValue(progressDoc);
@@ -39,6 +61,13 @@ describe("Course progress API contracts", () => {
 			save: jest.fn(async () => {}),
 		};
 
+		jest.spyOn(Course, "findById").mockImplementation(() =>
+			createCourseChain({
+				_id: "course-1",
+				studentsEnrolled: ["student-1"],
+				courseContent: [{ _id: "section-1", subSection: ["sub-legacy"] }],
+			})
+		);
 		jest.spyOn(SubSection, "findById").mockImplementation(async (id) => ({ _id: id }));
 		jest.spyOn(CourseProgress, "findOne").mockResolvedValue(progressDoc);
 		jest.spyOn(CourseProgress, "create").mockResolvedValue(progressDoc);
@@ -60,6 +89,13 @@ describe("Course progress API contracts", () => {
 			save: jest.fn(async () => {}),
 		};
 
+		jest.spyOn(Course, "findById").mockImplementation(() =>
+			createCourseChain({
+				_id: "course-1",
+				studentsEnrolled: ["student-1"],
+				courseContent: [{ _id: "section-1", subSection: ["sub-duplicate"] }],
+			})
+		);
 		jest
 			.spyOn(SubSection, "findById")
 			.mockImplementation(async (id) => ({ _id: id }));
@@ -73,5 +109,25 @@ describe("Course progress API contracts", () => {
 		expect(response.status).toBe(409);
 		expect(response.body.success).toBe(false);
 		expect(response.body.statusCode).toBe(409);
+	});
+
+	it("POST /api/v1/course/updateCourseProgress rejects students not enrolled in course", async () => {
+		jest.spyOn(Course, "findById").mockImplementation(() =>
+			createCourseChain({
+				_id: "course-1",
+				studentsEnrolled: ["another-student"],
+				courseContent: [{ _id: "section-1", subSection: ["sub-1"] }],
+			})
+		);
+		jest.spyOn(SubSection, "findById").mockImplementation(async (id) => ({ _id: id }));
+
+		const response = await request(app)
+			.post("/api/v1/course/updateCourseProgress")
+			.set("Authorization", `Bearer ${createStudentToken()}`)
+			.send({ courseId: "course-1", subSectionId: "sub-1" });
+
+		expect(response.status).toBe(403);
+		expect(response.body.success).toBe(false);
+		expect(response.body.statusCode).toBe(403);
 	});
 });

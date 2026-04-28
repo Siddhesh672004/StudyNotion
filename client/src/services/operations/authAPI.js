@@ -1,9 +1,9 @@
 import { toast } from "react-hot-toast"
 
-import { setLoading, setToken } from "../../slices/authSlice"
-import { resetCart } from "../../slices/cartSlice"
-import { resetCourseState } from "../../slices/courseSlice"
-import { setUser } from "../../slices/profileSlice"
+import { setLoading, setToken } from "../../store/slices/authSlice"
+import { resetCart } from "../../store/slices/cartSlice"
+import { resetCourseState } from "../../store/slices/courseSlice"
+import { setUser } from "../../store/slices/profileSlice"
 import { apiConnector } from "../apiconnector"
 import { endpoints } from "../apis"
 

@@ -24,15 +24,29 @@ function Catalog() {
   useEffect(() => {
     ;(async () => {
       try {
-        
         const res = await apiConnector("GET", categories.CATEGORIES_API)
         const allCategories = res?.data?.data?.categories || []
-        const category_id = allCategories.filter(
+        const matchedCategory = allCategories.find(
           (ct) => ct.name.split(" ").join("-").toLowerCase() === catalogName
-        )[0]._id
-        setCategoryId(category_id)
+        )
+
+        if (!matchedCategory?._id) {
+          setCatalogPageData({
+            success: false,
+            message: "Category not found",
+            data: null,
+          })
+          return
+        }
+
+        setCategoryId(matchedCategory._id)
       } catch (error) {
         console.log("Could not fetch Categories.", error)
+        setCatalogPageData({
+          success: false,
+          message: "Could not fetch categories",
+          data: null,
+        })
       }
     })()
   }, [catalogName])
@@ -44,6 +58,11 @@ function Catalog() {
           setCatalogPageData(res)
         } catch (error) {
           console.log(error)
+          setCatalogPageData({
+            success: false,
+            message: "Could not fetch catalog page",
+            data: null,
+          })
         }
       })()
     }

@@ -4,21 +4,59 @@ export const axiosInstance = axios.create({
     withCredentials: true,
 });
 
+const normalizeToken = (rawToken) => {
+    if (!rawToken) return null
+
+    let token = rawToken
+    try {
+        token = JSON.parse(rawToken)
+    } catch (_) {
+        token = rawToken
+    }
+
+    if (typeof token !== "string") {
+        return null
+    }
+
+    token = token.trim().replace(/^['"]+|['"]+$/g, "")
+    while (/^Bearer\s+/i.test(token)) {
+        token = token.replace(/^Bearer\s+/i, "").trim()
+    }
+    token = token.replace(/^['"]+|['"]+$/g, "")
+
+    if (!token || token === "undefined" || token === "null") {
+        return null
+    }
+
+    return token
+}
+
+const isTokenExpired = (token) => {
+    try {
+        const payload = JSON.parse(atob(token.split(".")[1]))
+        if (!payload?.exp) return false
+        return Date.now() >= payload.exp * 1000
+    } catch (_) {
+        return true
+    }
+}
+
+const clearAuthAndRedirect = () => {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+
+    if (window.location.pathname !== "/login") {
+        window.location.href = "/login"
+    }
+}
+
 axiosInstance.interceptors.request.use(
     (config) => {
-        const rawToken = localStorage.getItem("token")
-        let token = null
+        const token = normalizeToken(localStorage.getItem("token"))
 
-        if (rawToken) {
-            try {
-                token = JSON.parse(rawToken)
-            } catch (_) {
-                token = rawToken
-            }
-        }
-
-        if (token === "undefined" || token === "null" || token === "") {
-            token = null
+        if (token && isTokenExpired(token)) {
+            clearAuthAndRedirect()
+            return Promise.reject(new Error("Session expired"))
         }
 
         if (token) {
@@ -31,6 +69,24 @@ axiosInstance.interceptors.request.use(
         return config
     },
     (error) => Promise.reject(error)
+)
+
+axiosInstance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error?.response?.status
+        const message = error?.response?.data?.message
+        const isTokenAuthError =
+            message === "Token is missing" ||
+            message === "Token is invalid" ||
+            message === "Something went wrong while validating the token"
+
+        if (status === 401 && isTokenAuthError) {
+            clearAuthAndRedirect()
+        }
+
+        return Promise.reject(error)
+    }
 )
 
 export const apiConnector = (method, url, bodyData, headers, params) => {

@@ -9,6 +9,7 @@ export const useEnrolledCourses = () => {
     queryKey: ['enrolledCourses'],
     queryFn: () => getUserEnrolledCourses(token),
     enabled: !!token,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 };

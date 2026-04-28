@@ -28,6 +28,13 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse }) {
     price: CurrentPrice,
   } = course
 
+  const isStudentEnrolled =
+    !!user &&
+    course?.studentsEnrolled?.some(
+      (enrollment) =>
+        String(enrollment?._id || enrollment) === String(user?._id)
+    )
+
   // console.log("*******course information " , course)
 
   const handleShare = () => {
@@ -87,20 +94,20 @@ function CourseDetailsCard({ course, setConfirmationModal, handleBuyCourse }) {
             //if user already purches course then show the go to  enrolled course button if not not then call handel buy course 
               className="yellowButton"
               onClick={
-             user && course?.studentsEnrolled.some(enrollment => enrollment._id === user._id)//some is call back function
-             ? () => navigate("/dashboard/enrolled-courses")
-             : handleBuyCourse
-  }
+                isStudentEnrolled
+                  ? () => navigate("/dashboard/enrolled-courses")
+                  : handleBuyCourse
+              }
             >
                  {/* //if user already purches course  and user is valid then show the go to course button if not not then show buy now button  */}
 
-                 {user && course?.studentsEnrolled.some(enrollment => enrollment._id === user._id)
+                 {isStudentEnrolled
                 ? "Go To Course"
                 : "Buy Now"}
             </button>
 
             {/* when student is not enrolled  or not valid user then show add to cart button */}
-            {(!user || !course?.studentsEnrolled.includes(user?._id)) && (
+            {!isStudentEnrolled && (
               <button onClick={handleAddToCart} className="blackButton">
                 Add to Cart
               </button>

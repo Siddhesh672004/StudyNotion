@@ -1,6 +1,7 @@
 const {
   createRazorpayOrder,
   verifyRazorpaySignature,
+  validateVerifiedPayment,
   enrollStudentsInCourses,
   sendPaymentSuccessMail,
 } = require("../services/paymentService");
@@ -44,7 +45,14 @@ exports.verifySignature = asyncHandler(async (req, res) => {
     throw new AppError(400, "Invalid signature");
   }
 
-  await enrollStudentsInCourses({ courses, userId });
+  const verifiedCourses = await validateVerifiedPayment({
+    razorpay_order_id,
+    razorpay_payment_id,
+    courses,
+    userId,
+  });
+
+  await enrollStudentsInCourses({ courses: verifiedCourses, userId });
 
   return res
     .status(200)

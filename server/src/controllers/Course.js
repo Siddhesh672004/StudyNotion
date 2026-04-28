@@ -120,7 +120,7 @@ exports.createCourse = async (req, res) => {
 exports.showAllCourses = async (req, res) => {
   try {
     const allCourses = await Course.find(
-      {},
+      { status: "Published" },
       {
         courseName: true,
         price: true,
@@ -343,6 +343,14 @@ exports.getFullCourseDetails = async (req, res) => {
   try {
     const { courseId } = req.body
     const userId = req.user.id
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "courseId is required",
+      })
+    }
+
     const courseDetails = await Course.findOne({
       _id: courseId,
     })
@@ -362,19 +370,28 @@ exports.getFullCourseDetails = async (req, res) => {
       })
       .exec()
 
-    let courseProgressCount = await CourseProgress.findOne({
-      courseID: courseId,
-      userId: userId,
-    })
-
-    console.log("courseProgressCount : ", courseProgressCount)
-
     if (!courseDetails) {
       return res.status(400).json({
         success: false,
         message: `Could not find course with id: ${courseId}`,
       })
     }
+
+    const isEnrolled = courseDetails.studentsEnrolled?.some(
+      (student) => String(student?._id || student) === String(userId)
+    )
+
+    if (!isEnrolled) {
+      return res.status(403).json({
+        success: false,
+        message: "You need to enroll in this course before accessing lectures",
+      })
+    }
+
+    const courseProgressCount = await CourseProgress.findOne({
+      courseID: courseId,
+      userId: userId,
+    })
 
     // if (courseDetails.status === "Draft") {
     //   return res.status(403).json({

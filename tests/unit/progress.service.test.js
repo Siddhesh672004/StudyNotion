@@ -1,10 +1,31 @@
 const SubSection = require("../../server/src/models/SubSection");
+const Course = require("../../server/src/models/Course");
 const CourseProgress = require("../../server/src/models/CourseProgress");
 const {
   getProgressPercentage,
   shouldTriggerCertificate,
   markLectureComplete,
 } = require("../../server/src/services/progressService");
+
+const createCourseChain = (result) => {
+  const chain = {
+    select() {
+      return chain;
+    },
+    populate() {
+      return chain;
+    },
+    lean: async () => result,
+  };
+
+  return chain;
+};
+
+const enrolledCourse = {
+  _id: "course-1",
+  studentsEnrolled: ["student-1"],
+  courseContent: [{ _id: "section-1", subSection: ["sub-1"] }],
+};
 
 describe("Progress service", () => {
   it("getProgressPercentage returns 0 when total videos count is 0", () => {
@@ -24,6 +45,9 @@ describe("Progress service", () => {
   });
 
   it("markLectureComplete throws when subsection does not exist", async () => {
+    jest.spyOn(Course, "findById").mockImplementation(() =>
+      createCourseChain(enrolledCourse)
+    );
     jest.spyOn(SubSection, "findById").mockResolvedValue(null);
 
     await expect(
@@ -43,6 +67,9 @@ describe("Progress service", () => {
       save: jest.fn(async () => {}),
     };
 
+    jest.spyOn(Course, "findById").mockImplementation(() =>
+      createCourseChain(enrolledCourse)
+    );
     jest.spyOn(SubSection, "findById").mockResolvedValue({ _id: "sub-1" });
     jest.spyOn(CourseProgress, "findOne").mockResolvedValue(null);
     jest.spyOn(CourseProgress, "create").mockResolvedValue(progressDoc);
@@ -63,6 +90,9 @@ describe("Progress service", () => {
       save: jest.fn(async () => {}),
     };
 
+    jest.spyOn(Course, "findById").mockImplementation(() =>
+      createCourseChain(enrolledCourse)
+    );
     jest.spyOn(SubSection, "findById").mockResolvedValue({ _id: "sub-1" });
     jest.spyOn(CourseProgress, "findOne").mockResolvedValue(progressDoc);
 
